@@ -1,17 +1,34 @@
-# metarix
+# MetaRix
 
-A new Flutter project.
+MetaRix is a governed social media operations platform built to support structured planning, bounded execution, reviewable publishing, and evidence-backed operator workflows.
 
-## Getting Started
+## What lives here
 
-This project is a starting point for a Flutter application.
+- Product-facing documentation
+- MetaRix-specific governance contracts and schemas
+- Runtime implementation surfaces
+- Bounded build plans
+- Release evidence and validation notes
 
-A few resources to get you started if this is your first Flutter project:
+## Operating posture
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+MetaRix follows the 8gentiC | Caris | Phoenix framework:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- `8gentiC` owns governed SDLC orchestration, handoffs, review classes, and build routing.
+- `Caris` owns constitutional governance, schemas, policy manifests, permissions, hard gates, and machine-readable truth.
+- `Phoenix` owns the bounded runtime, operator workbench, evidence presentation, denial visibility, and controlled execution behavior.
+
+## Current document map
+
+- `docs/PRODUCT_CHARTER.md`
+- `docs/V1_SCOPE.md`
+- `docs/DOMAIN_MODEL.md`
+
+## Working principles
+
+- Preserve architecture boundaries.
+- Prefer deterministic behavior over cleverness.
+- Keep execution bounded and reviewable.
+- Treat publish actions as governed operations, not casual UI events.
+- Do not fabricate completion.
+- Do not widen scope silently.
