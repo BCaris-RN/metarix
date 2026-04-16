@@ -1,0 +1,85 @@
+{
+  "contract": "metarix.content_state_contract",
+  "version": "0.1.0",
+  "states": [
+    {
+      "id": "draft",
+      "terminal": false
+    },
+    {
+      "id": "in_review",
+      "terminal": false
+    },
+    {
+      "id": "changes_requested",
+      "terminal": false
+    },
+    {
+      "id": "approved",
+      "terminal": false
+    },
+    {
+      "id": "scheduled",
+      "terminal": false
+    },
+    {
+      "id": "publish_eligible",
+      "terminal": false,
+      "derived": true
+    },
+    {
+      "id": "publish_denied",
+      "terminal": false,
+      "derived": true
+    },
+    {
+      "id": "published",
+      "terminal": true
+    },
+    {
+      "id": "archived",
+      "terminal": true
+    }
+  ],
+  "transitions": [
+    {
+      "from": "draft",
+      "to": "in_review",
+      "action": "request_review"
+    },
+    {
+      "from": "in_review",
+      "to": "changes_requested",
+      "action": "request_changes"
+    },
+    {
+      "from": "changes_requested",
+      "to": "in_review",
+      "action": "request_review"
+    },
+    {
+      "from": "in_review",
+      "to": "approved",
+      "action": "approve_content"
+    },
+    {
+      "from": "approved",
+      "to": "scheduled",
+      "action": "schedule_post"
+    },
+    {
+      "from": "scheduled",
+      "to": "published",
+      "action": "record_publish_execution"
+    },
+    {
+      "from": "scheduled",
+      "to": "archived",
+      "action": "cancel_schedule"
+    }
+  ],
+  "state_notes": {
+    "scheduled": "Scheduled means time-bound and queued for policy evaluation. It does not imply publish eligibility.",
+    "publish_eligible": "Publish eligible is a computed posture, not a manually assigned operator shortcut."
+  }
+}

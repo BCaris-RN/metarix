@@ -1,0 +1,84 @@
+{
+  "contract": "metarix.connector_capability_registry",
+  "version": "0.1.0",
+  "default_behavior": {
+    "unknown_channel": "deny",
+    "unknown_capability": false
+  },
+  "capability_flags": [
+    "draft_supported",
+    "schedule_supported",
+    "publish_supported",
+    "analytics_ingest_supported",
+    "listening_supported",
+    "reply_supported"
+  ],
+  "channels": {
+    "instagram": {
+      "display_name": "Instagram",
+      "capabilities": {
+        "draft_supported": true,
+        "schedule_supported": true,
+        "publish_supported": false,
+        "analytics_ingest_supported": true,
+        "listening_supported": true,
+        "reply_supported": false
+      }
+    },
+    "facebook": {
+      "display_name": "Facebook",
+      "capabilities": {
+        "draft_supported": true,
+        "schedule_supported": true,
+        "publish_supported": true,
+        "analytics_ingest_supported": true,
+        "listening_supported": true,
+        "reply_supported": false
+      }
+    },
+    "x": {
+      "display_name": "X",
+      "capabilities": {
+        "draft_supported": true,
+        "schedule_supported": true,
+        "publish_supported": false,
+        "analytics_ingest_supported": true,
+        "listening_supported": true,
+        "reply_supported": false
+      }
+    },
+    "linkedin": {
+      "display_name": "LinkedIn",
+      "capabilities": {
+        "draft_supported": true,
+        "schedule_supported": true,
+        "publish_supported": true,
+        "analytics_ingest_supported": true,
+        "listening_supported": true,
+        "reply_supported": false
+      }
+    },
+    "youtube": {
+      "display_name": "YouTube",
+      "capabilities": {
+        "draft_supported": true,
+        "schedule_supported": true,
+        "publish_supported": false,
+        "analytics_ingest_supported": true,
+        "listening_supported": true,
+        "reply_supported": false
+      }
+    },
+    "tiktok": {
+      "display_name": "TikTok",
+      "capabilities": {
+        "draft_supported": true,
+        "schedule_supported": true,
+        "publish_supported": false,
+        "analytics_ingest_supported": true,
+        "listening_supported": true,
+        "reply_supported": false
+      }
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "contract": "metarix.approval_policy_matrix",
+  "version": "0.1.0",
+  "requirements": {
+    "none": {
+      "minimum_role": "author",
+      "separation_of_duties": false
+    },
+    "manager_required": {
+      "minimum_role": "manager",
+      "separation_of_duties": true
+    },
+    "marketing_lead_required": {
+      "minimum_role": "marketing_lead",
+      "separation_of_duties": true
+    }
+  },
+  "default_policies": {
+    "create_draft": "none",
+    "request_review": "none",
+    "approve_content": "manager_required",
+    "schedule_post": "manager_required",
+    "publish_attempt": "marketing_lead_required",
+    "reschedule_post": "manager_required",
+    "cancel_schedule": "manager_required",
+    "generate_report": "none",
+    "create_listening_query": "manager_required"
+  },
+  "channel_overrides": {
+    "instagram": {
+      "publish_attempt": "marketing_lead_required"
+    },
+    "facebook": {
+      "publish_attempt": "marketing_lead_required"
+    },
+    "x": {
+      "publish_attempt": "marketing_lead_required"
+    },
+    "linkedin": {
+      "publish_attempt": "marketing_lead_required"
+    },
+    "youtube": {
+      "publish_attempt": "marketing_lead_required"
+    },
+    "tiktok": {
+      "publish_attempt": "marketing_lead_required"
+    }
+  },
+  "enforcement_note": "Capability support and action permission must pass before an approval rule is considered satisfied."
+}

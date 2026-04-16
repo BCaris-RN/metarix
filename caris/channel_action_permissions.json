@@ -1,0 +1,260 @@
+{
+  "contract": "metarix.channel_action_permissions",
+  "version": "0.1.0",
+  "default_effect": "deny",
+  "roles": [
+    "author",
+    "manager",
+    "marketing_lead"
+  ],
+  "actions": [
+    "create_draft",
+    "request_review",
+    "approve_content",
+    "schedule_post",
+    "publish_attempt",
+    "reschedule_post",
+    "cancel_schedule",
+    "generate_report",
+    "create_listening_query"
+  ],
+  "action_capability_dependencies": {
+    "create_draft": "draft_supported",
+    "request_review": "draft_supported",
+    "approve_content": "draft_supported",
+    "schedule_post": "schedule_supported",
+    "publish_attempt": "publish_supported",
+    "reschedule_post": "schedule_supported",
+    "cancel_schedule": "schedule_supported",
+    "generate_report": "analytics_ingest_supported",
+    "create_listening_query": "listening_supported"
+  },
+  "channels": {
+    "instagram": {
+      "create_draft": [
+        "author",
+        "manager",
+        "marketing_lead"
+      ],
+      "request_review": [
+        "author",
+        "manager",
+        "marketing_lead"
+      ],
+      "approve_content": [
+        "manager",
+        "marketing_lead"
+      ],
+      "schedule_post": [
+        "manager",
+        "marketing_lead"
+      ],
+      "publish_attempt": [],
+      "reschedule_post": [
+        "manager",
+        "marketing_lead"
+      ],
+      "cancel_schedule": [
+        "manager",
+        "marketing_lead"
+      ],
+      "generate_report": [
+        "manager",
+        "marketing_lead"
+      ],
+      "create_listening_query": [
+        "manager",
+        "marketing_lead"
+      ]
+    },
+    "facebook": {
+      "create_draft": [
+        "author",
+        "manager",
+        "marketing_lead"
+      ],
+      "request_review": [
+        "author",
+        "manager",
+        "marketing_lead"
+      ],
+      "approve_content": [
+        "manager",
+        "marketing_lead"
+      ],
+      "schedule_post": [
+        "manager",
+        "marketing_lead"
+      ],
+      "publish_attempt": [
+        "marketing_lead"
+      ],
+      "reschedule_post": [
+        "manager",
+        "marketing_lead"
+      ],
+      "cancel_schedule": [
+        "manager",
+        "marketing_lead"
+      ],
+      "generate_report": [
+        "manager",
+        "marketing_lead"
+      ],
+      "create_listening_query": [
+        "manager",
+        "marketing_lead"
+      ]
+    },
+    "x": {
+      "create_draft": [
+        "author",
+        "manager",
+        "marketing_lead"
+      ],
+      "request_review": [
+        "author",
+        "manager",
+        "marketing_lead"
+      ],
+      "approve_content": [
+        "manager",
+        "marketing_lead"
+      ],
+      "schedule_post": [
+        "manager",
+        "marketing_lead"
+      ],
+      "publish_attempt": [],
+      "reschedule_post": [
+        "manager",
+        "marketing_lead"
+      ],
+      "cancel_schedule": [
+        "manager",
+        "marketing_lead"
+      ],
+      "generate_report": [
+        "manager",
+        "marketing_lead"
+      ],
+      "create_listening_query": [
+        "manager",
+        "marketing_lead"
+      ]
+    },
+    "linkedin": {
+      "create_draft": [
+        "author",
+        "manager",
+        "marketing_lead"
+      ],
+      "request_review": [
+        "author",
+        "manager",
+        "marketing_lead"
+      ],
+      "approve_content": [
+        "manager",
+        "marketing_lead"
+      ],
+      "schedule_post": [
+        "manager",
+        "marketing_lead"
+      ],
+      "publish_attempt": [
+        "marketing_lead"
+      ],
+      "reschedule_post": [
+        "manager",
+        "marketing_lead"
+      ],
+      "cancel_schedule": [
+        "manager",
+        "marketing_lead"
+      ],
+      "generate_report": [
+        "manager",
+        "marketing_lead"
+      ],
+      "create_listening_query": [
+        "manager",
+        "marketing_lead"
+      ]
+    },
+    "youtube": {
+      "create_draft": [
+        "author",
+        "manager",
+        "marketing_lead"
+      ],
+      "request_review": [
+        "author",
+        "manager",
+        "marketing_lead"
+      ],
+      "approve_content": [
+        "manager",
+        "marketing_lead"
+      ],
+      "schedule_post": [
+        "manager",
+        "marketing_lead"
+      ],
+      "publish_attempt": [],
+      "reschedule_post": [
+        "manager",
+        "marketing_lead"
+      ],
+      "cancel_schedule": [
+        "manager",
+        "marketing_lead"
+      ],
+      "generate_report": [
+        "manager",
+        "marketing_lead"
+      ],
+      "create_listening_query": [
+        "manager",
+        "marketing_lead"
+      ]
+    },
+    "tiktok": {
+      "create_draft": [
+        "author",
+        "manager",
+        "marketing_lead"
+      ],
+      "request_review": [
+        "author",
+        "manager",
+        "marketing_lead"
+      ],
+      "approve_content": [
+        "manager",
+        "marketing_lead"
+      ],
+      "schedule_post": [
+        "manager",
+        "marketing_lead"
+      ],
+      "publish_attempt": [],
+      "reschedule_post": [
+        "manager",
+        "marketing_lead"
+      ],
+      "cancel_schedule": [
+        "manager",
+        "marketing_lead"
+      ],
+      "generate_report": [
+        "manager",
+        "marketing_lead"
+      ],
+      "create_listening_query": [
+        "manager",
+        "marketing_lead"
+      ]
+    }
+  }
+}

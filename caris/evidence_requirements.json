@@ -1,0 +1,64 @@
+{
+  "contract": "metarix.evidence_requirements",
+  "version": "0.1.0",
+  "evidence_items": [
+    {
+      "id": "draft_snapshot",
+      "label": "Draft snapshot"
+    },
+    {
+      "id": "review_request_record",
+      "label": "Review request record"
+    },
+    {
+      "id": "approval_record",
+      "label": "Approval record"
+    },
+    {
+      "id": "schedule_validation",
+      "label": "Schedule validation"
+    },
+    {
+      "id": "channel_capability_check",
+      "label": "Channel capability check"
+    },
+    {
+      "id": "permission_check",
+      "label": "Permission check"
+    },
+    {
+      "id": "connector_readiness_check",
+      "label": "Connector readiness check"
+    },
+    {
+      "id": "report_input_snapshot",
+      "label": "Report input snapshot"
+    }
+  ],
+  "profiles": {
+    "request_review": [
+      "draft_snapshot"
+    ],
+    "approval": [
+      "draft_snapshot",
+      "review_request_record",
+      "approval_record"
+    ],
+    "schedule": [
+      "approval_record",
+      "schedule_validation",
+      "channel_capability_check"
+    ],
+    "publish_eligibility": [
+      "approval_record",
+      "schedule_validation",
+      "channel_capability_check",
+      "permission_check",
+      "connector_readiness_check"
+    ],
+    "report_generation": [
+      "report_input_snapshot"
+    ]
+  },
+  "evaluation_note": "Publish posture may only advance when every required evidence item for the active profile is present."
+}
