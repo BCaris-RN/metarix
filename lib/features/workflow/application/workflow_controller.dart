@@ -2,9 +2,12 @@ import 'package:flutter/foundation.dart';
 
 import '../../../data/local_metarix_gateway.dart';
 import '../../../features/admin/domain/admin_models.dart';
+import '../../../features/publish/application/publish_state_transition_service.dart';
+import '../../../features/publish/domain/publish_models.dart';
 import '../../../features/schedule/domain/schedule_models.dart';
 import '../../../repositories/approval_repository.dart';
 import '../../../repositories/draft_repository.dart';
+import '../../../repositories/publish_state_repository.dart';
 import '../../../repositories/schedule_repository.dart';
 import '../../../runtime/activity/activity_event.dart';
 import '../../../runtime/activity/activity_event_type.dart';
@@ -17,9 +20,11 @@ class WorkflowController extends ChangeNotifier {
     this._draftRepository,
     this._approvalRepository,
     this._scheduleRepository,
+    this._publishStateRepository,
     this._gateway,
     this._accessControlService,
     this._publishPostureEvaluator,
+    this._publishStateTransitionService,
   ) {
     _gateway.addListener(notifyListeners);
   }
@@ -27,15 +32,26 @@ class WorkflowController extends ChangeNotifier {
   final DraftRepository _draftRepository;
   final ApprovalRepository _approvalRepository;
   final ScheduleRepository _scheduleRepository;
+  final PublishStateRepository _publishStateRepository;
   final LocalMetarixGateway _gateway;
   final AccessControlService _accessControlService;
   final PublishPostureEvaluator _publishPostureEvaluator;
+  final PublishStateTransitionService _publishStateTransitionService;
 
   List<PostDraft> get drafts => _gateway.snapshot.drafts;
 
   List<ApprovalRecord> get approvals => _gateway.snapshot.approvals;
 
   List<ScheduleRecord> get schedules => _gateway.snapshot.schedules;
+
+  ScheduledPostRecord? publishRecordFor(String draftId) {
+    for (final record in _gateway.snapshot.scheduledPosts) {
+      if (record.draftId == draftId) {
+        return record;
+      }
+    }
+    return null;
+  }
 
   ApprovalRequirement approvalRequirementFor(PostDraft draft) {
     return _publishPostureEvaluator
@@ -73,9 +89,9 @@ class WorkflowController extends ChangeNotifier {
   }
 
   Future<void> requestReview(PostDraft draft) async {
-    await _draftRepository.updateDraft(
-      draft.copyWith(currentState: ContentState.inReview),
-    );
+    final updatedDraft = draft.copyWith(currentState: ContentState.inReview);
+    await _draftRepository.updateDraft(updatedDraft);
+    await _syncPublishRecord(updatedDraft);
     await _recordActivity(
       objectType: ActivityObjectType.draft,
       objectId: draft.id,
@@ -86,9 +102,11 @@ class WorkflowController extends ChangeNotifier {
   }
 
   Future<void> requestChanges(PostDraft draft) async {
-    await _draftRepository.updateDraft(
-      draft.copyWith(currentState: ContentState.changesRequested),
+    final updatedDraft = draft.copyWith(
+      currentState: ContentState.changesRequested,
     );
+    await _draftRepository.updateDraft(updatedDraft);
+    await _syncPublishRecord(updatedDraft);
     await _recordActivity(
       objectType: ActivityObjectType.draft,
       objectId: draft.id,
@@ -122,9 +140,9 @@ class WorkflowController extends ChangeNotifier {
       decidedAt: DateTime.now(),
     );
     await _approvalRepository.createApprovalRecord(approval);
-    await _draftRepository.updateDraft(
-      draft.copyWith(currentState: ContentState.approved),
-    );
+    final updatedDraft = draft.copyWith(currentState: ContentState.approved);
+    await _draftRepository.updateDraft(updatedDraft);
+    await _syncPublishRecord(updatedDraft);
     await _recordActivity(
       objectType: ActivityObjectType.approval,
       objectId: approval.id,
@@ -173,7 +191,7 @@ class WorkflowController extends ChangeNotifier {
     );
 
     await _draftRepository.updateDraft(updatedDraft);
-    await _scheduleRepository.saveScheduleRecord(
+    final savedSchedule = await _scheduleRepository.saveScheduleRecord(
       ScheduleRecord(
         id: scheduleRecord.id,
         draftId: scheduleRecord.draftId,
@@ -181,6 +199,13 @@ class WorkflowController extends ChangeNotifier {
         scheduledAt: scheduleRecord.scheduledAt,
         denialReasons: posture.denialReasons,
       ),
+    );
+    await _syncPublishRecord(
+      updatedDraft,
+      scheduleRecord: savedSchedule,
+      nextStatus: posture.denialReasons.isEmpty
+          ? PublishRecordStatus.scheduled
+          : PublishRecordStatus.blocked,
     );
     await _recordActivity(
       objectType: ActivityObjectType.schedule,
@@ -218,9 +243,42 @@ class WorkflowController extends ChangeNotifier {
       nextEvidence.add(evidenceCode);
     }
 
-    await _draftRepository.updateDraft(
-      draft.copyWith(evidenceCodes: nextEvidence),
+    final updatedDraft = draft.copyWith(evidenceCodes: nextEvidence);
+    await _draftRepository.updateDraft(updatedDraft);
+    await _syncPublishRecord(updatedDraft);
+  }
+
+  Future<void> _syncPublishRecord(
+    PostDraft draft, {
+    ScheduleRecord? scheduleRecord,
+    PublishRecordStatus? nextStatus,
+  }) async {
+    final existing = publishRecordFor(draft.id);
+    final baseRecord = _publishStateTransitionService.syncDraftRecord(
+      draft: draft,
+      campaignName: _campaignNameFor(draft.campaignId),
+      existing: existing,
+      schedule: scheduleRecord ?? scheduleFor(draft.id),
     );
+    final nextRecord = nextStatus == null
+        ? baseRecord
+        : _publishStateTransitionService.transition(
+            baseRecord,
+            nextStatus,
+            occurredAt: DateTime.now(),
+            scheduledAt: scheduleRecord?.scheduledAt ?? draft.plannedPublishAt,
+            denialReasons: scheduleRecord?.denialReasons,
+          );
+    await _publishStateRepository.saveScheduledPostRecord(nextRecord);
+  }
+
+  String _campaignNameFor(String campaignId) {
+    for (final campaign in _gateway.snapshot.campaigns) {
+      if (campaign.id == campaignId) {
+        return campaign.name;
+      }
+    }
+    return campaignId;
   }
 
   Future<void> _recordActivity({

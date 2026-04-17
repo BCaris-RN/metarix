@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:metarix/data/local_metarix_gateway.dart';
 import 'package:metarix/features/planning/application/planning_controller.dart';
 import 'package:metarix/features/planning/domain/planning_models.dart';
+import 'package:metarix/features/publish/application/publish_state_transition_service.dart';
+import 'package:metarix/features/publish/domain/publish_models.dart';
 import 'package:metarix/features/shared/domain/core_models.dart';
 import 'package:metarix/features/workflow/domain/workflow_models.dart';
 import 'package:metarix/runtime/activity/activity_event_type.dart';
@@ -14,7 +16,13 @@ void main() {
   test('campaigns and drafts keep real linkage', () async {
     SharedPreferences.setMockInitialValues({});
     final gateway = await LocalMetarixGateway.bootstrap();
-    final controller = PlanningController(gateway, gateway, gateway);
+    final controller = PlanningController(
+      gateway,
+      gateway,
+      gateway,
+      gateway,
+      const PublishStateTransitionService(),
+    );
 
     final campaign = Campaign(
       id: gateway.createId('campaign'),
@@ -43,22 +51,37 @@ void main() {
     );
     await controller.saveDraft(draft);
 
-    expect(controller.campaigns.any((entry) => entry.id == campaign.id), isTrue);
-    expect(controller.drafts.any((entry) => entry.campaignId == campaign.id), isTrue);
     expect(
-      gateway.viewActivityEvents(
-        workspaceId: gateway.workspace.id,
-        objectType: ActivityObjectType.campaign,
-        objectId: campaign.id,
-      ).any((event) => event.eventType == ActivityEventType.created),
+      controller.campaigns.any((entry) => entry.id == campaign.id),
       isTrue,
     );
     expect(
-      gateway.viewActivityEvents(
-        workspaceId: gateway.workspace.id,
-        objectType: ActivityObjectType.draft,
-        objectId: draft.id,
-      ).any((event) => event.eventType == ActivityEventType.created),
+      controller.drafts.any((entry) => entry.campaignId == campaign.id),
+      isTrue,
+    );
+    final publishRecord = gateway.snapshot.scheduledPosts.firstWhere(
+      (entry) => entry.draftId == draft.id,
+    );
+    expect(publishRecord.status, PublishRecordStatus.draft);
+    expect(publishRecord.campaignId, campaign.id);
+    expect(
+      gateway
+          .viewActivityEvents(
+            workspaceId: gateway.workspace.id,
+            objectType: ActivityObjectType.campaign,
+            objectId: campaign.id,
+          )
+          .any((event) => event.eventType == ActivityEventType.created),
+      isTrue,
+    );
+    expect(
+      gateway
+          .viewActivityEvents(
+            workspaceId: gateway.workspace.id,
+            objectType: ActivityObjectType.draft,
+            objectId: draft.id,
+          )
+          .any((event) => event.eventType == ActivityEventType.created),
       isTrue,
     );
   });

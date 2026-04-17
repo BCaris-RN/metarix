@@ -141,7 +141,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 DataCell(Text('${record.impressions}')),
                                 DataCell(Text('${record.engagements}')),
                                 DataCell(Text('${record.clicks}')),
-                                DataCell(Text(record.sentimentScore.toStringAsFixed(2))),
+                                DataCell(
+                                  Text(
+                                    record.sentimentScore.toStringAsFixed(2),
+                                  ),
+                                ),
                               ],
                             ),
                           )
@@ -161,10 +165,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     actionLabel: null,
                     onAction: null,
                     children: standout
-                        .map((entry) => ListTile(
-                              title: Text(entry.headline),
-                              subtitle: Text(entry.detail),
-                            ))
+                        .map(
+                          (entry) => ListTile(
+                            title: Text(entry.headline),
+                            subtitle: Text(entry.detail),
+                          ),
+                        )
                         .toList(),
                   ),
                 ),
@@ -174,7 +180,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     title: 'Takeaways',
                     actionLabel: 'Add takeaway',
                     onAction: decision.allowed
-                        ? () => _showTakeawayDialog(context, controller, activePeriod.id, null)
+                        ? () => _showTakeawayDialog(
+                            context,
+                            controller,
+                            activePeriod.id,
+                            null,
+                          )
                         : null,
                     children: takeaways
                         .map(
@@ -185,11 +196,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               icon: const Icon(Icons.edit_outlined),
                               onPressed: decision.allowed
                                   ? () => _showTakeawayDialog(
-                                        context,
-                                        controller,
-                                        activePeriod.id,
-                                        entry,
-                                      )
+                                      context,
+                                      controller,
+                                      activePeriod.id,
+                                      entry,
+                                    )
                                   : null,
                             ),
                           ),
@@ -208,7 +219,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     title: 'Overall learnings',
                     actionLabel: 'Add learning',
                     onAction: decision.allowed
-                        ? () => _showLearningDialog(context, controller, activePeriod.id, null)
+                        ? () => _showLearningDialog(
+                            context,
+                            controller,
+                            activePeriod.id,
+                            null,
+                          )
                         : null,
                     children: learnings
                         .map((entry) => ListTile(title: Text(entry.text)))
@@ -222,11 +238,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     actionLabel: 'Add action',
                     onAction: decision.allowed
                         ? () => _showRecommendationDialog(
-                              context,
-                              controller,
-                              activePeriod.id,
-                              null,
-                            )
+                            context,
+                            controller,
+                            activePeriod.id,
+                            null,
+                          )
                         : null,
                     children: actions
                         .map(
@@ -237,11 +253,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               icon: const Icon(Icons.edit_outlined),
                               onPressed: decision.allowed
                                   ? () => _showRecommendationDialog(
-                                        context,
-                                        controller,
-                                        activePeriod.id,
-                                        entry,
-                                      )
+                                      context,
+                                      controller,
+                                      activePeriod.id,
+                                      entry,
+                                    )
                                   : null,
                             ),
                           ),
@@ -285,19 +301,29 @@ class _ReportsScreenState extends State<ReportsScreen> {
   ) async {
     final services = MetarixScope.of(context);
     final titleController = TextEditingController(text: existing?.title ?? '');
-    final whatController =
-        TextEditingController(text: existing?.whatHappened ?? '');
-    final whyController = TextEditingController(text: existing?.whyItHappened ?? '');
-    final howController = TextEditingController(text: existing?.howWeKnow ?? '');
-    final learnedController =
-        TextEditingController(text: existing?.whatWeLearned ?? '');
-    final saved = await _showDialog(context, existing == null ? 'New takeaway' : 'Edit takeaway', [
-      _Field(titleController, 'Title'),
-      _Field(whatController, 'What happened'),
-      _Field(whyController, 'Why it happened'),
-      _Field(howController, 'How we know'),
-      _Field(learnedController, 'What we learned'),
-    ]);
+    final whatController = TextEditingController(
+      text: existing?.whatHappened ?? '',
+    );
+    final whyController = TextEditingController(
+      text: existing?.whyItHappened ?? '',
+    );
+    final howController = TextEditingController(
+      text: existing?.howWeKnow ?? '',
+    );
+    final learnedController = TextEditingController(
+      text: existing?.whatWeLearned ?? '',
+    );
+    final saved = await _showDialog(
+      context,
+      existing == null ? 'New takeaway' : 'Edit takeaway',
+      [
+        _Field(titleController, 'Title'),
+        _Field(whatController, 'What happened'),
+        _Field(whyController, 'Why it happened'),
+        _Field(howController, 'How we know'),
+        _Field(learnedController, 'What we learned'),
+      ],
+    );
     if (!saved) {
       return;
     }
@@ -322,9 +348,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
   ) async {
     final services = MetarixScope.of(context);
     final textController = TextEditingController(text: existing?.text ?? '');
-    final saved = await _showDialog(context, existing == null ? 'New learning' : 'Edit learning', [
-      _Field(textController, 'Learning'),
-    ]);
+    final saved = await _showDialog(
+      context,
+      existing == null ? 'New learning' : 'Edit learning',
+      [_Field(textController, 'Learning')],
+    );
     if (!saved) {
       return;
     }
@@ -345,11 +373,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
   ) async {
     final services = MetarixScope.of(context);
     final titleController = TextEditingController(text: existing?.title ?? '');
-    final rationaleController =
-        TextEditingController(text: existing?.rationale ?? '');
+    final rationaleController = TextEditingController(
+      text: existing?.rationale ?? '',
+    );
     final ownerController = TextEditingController(text: existing?.owner ?? '');
-    final benefitController =
-        TextEditingController(text: existing?.expectedBenefit ?? '');
+    final benefitController = TextEditingController(
+      text: existing?.expectedBenefit ?? '',
+    );
     ReportActionType selectedType =
         existing?.actionType ?? ReportActionType.startAction;
     final saved = await showDialog<bool>(
@@ -391,7 +421,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
               TextField(
                 controller: benefitController,
-                decoration: const InputDecoration(labelText: 'Expected benefit'),
+                decoration: const InputDecoration(
+                  labelText: 'Expected benefit',
+                ),
               ),
             ],
           ),
@@ -487,7 +519,10 @@ class _EditableSection extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                 ),
                 if (actionLabel != null)
                   TextButton.icon(
@@ -506,10 +541,7 @@ class _EditableSection extends StatelessWidget {
 }
 
 class _MetricCard extends StatelessWidget {
-  const _MetricCard({
-    required this.title,
-    required this.value,
-  });
+  const _MetricCard({required this.title, required this.value});
 
   final String title;
   final String value;
@@ -523,11 +555,7 @@ class _MetricCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title),
-              const SizedBox(height: 8),
-              Text(value),
-            ],
+            children: [Text(title), const SizedBox(height: 8), Text(value)],
           ),
         ),
       ),

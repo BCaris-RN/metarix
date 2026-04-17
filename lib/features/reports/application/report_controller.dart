@@ -15,19 +15,19 @@ class ReportController extends ChangeNotifier {
   final LocalMetarixGateway _gateway;
 
   ReportSnapshot get snapshot => ReportSnapshot(
-        activePeriodId: _gateway.snapshot.reportPeriods.first.id,
-        reportPeriods: _gateway.snapshot.reportPeriods,
-        comparisonPeriods: _gateway.snapshot.comparisonPeriods,
-        normalizedMetrics: _gateway.snapshot.normalizedMetrics,
-        channelPerformance: _gateway.loadReportDataSync().channelPerformance,
-        standoutResults: _gateway.snapshot.standoutResults,
-        takeaways: _gateway.snapshot.takeaways,
-        overallLearnings: _gateway.snapshot.overallLearnings,
-        futureActions: _gateway.snapshot.futureActions,
-        recommendationInsights: _gateway.snapshot.recommendationInsights,
-        successSnapshot: _gateway.snapshot.successSnapshot,
-        topPostPlaceholder: _gateway.snapshot.topPostPlaceholder,
-      );
+    activePeriodId: _gateway.snapshot.reportPeriods.first.id,
+    reportPeriods: _gateway.snapshot.reportPeriods,
+    comparisonPeriods: _gateway.snapshot.comparisonPeriods,
+    normalizedMetrics: _gateway.snapshot.normalizedMetrics,
+    channelPerformance: _gateway.loadReportDataSync().channelPerformance,
+    standoutResults: _gateway.snapshot.standoutResults,
+    takeaways: _gateway.snapshot.takeaways,
+    overallLearnings: _gateway.snapshot.overallLearnings,
+    futureActions: _gateway.snapshot.futureActions,
+    recommendationInsights: _gateway.snapshot.recommendationInsights,
+    successSnapshot: _gateway.snapshot.successSnapshot,
+    topPostPlaceholder: _gateway.snapshot.topPostPlaceholder,
+  );
 
   Future<void> saveTakeaway(Takeaway takeaway) async {
     await _reportRepository.saveTakeaway(takeaway);

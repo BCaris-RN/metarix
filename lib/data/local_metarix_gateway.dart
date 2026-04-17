@@ -9,6 +9,7 @@ import '../features/listening/domain/listening_models.dart';
 import '../features/listening/domain/listening_alert_rule.dart';
 import '../features/listening/domain/listening_result_group.dart';
 import '../features/planning/domain/planning_models.dart';
+import '../features/publish/domain/publish_models.dart';
 import '../features/recommendations/domain/recommendation_model.dart';
 import '../features/recommendations/recommendation_repository.dart';
 import '../features/reports/data/normalized_metric_repository.dart';
@@ -20,10 +21,13 @@ import '../features/shared/domain/core_models.dart';
 import '../features/strategy/domain/strategy_models.dart';
 import '../features/workflow/domain/workflow_models.dart';
 import '../features/exports/domain/export_artifact.dart';
+import '../metarix_core/models/connector_models.dart';
 import '../repositories/approval_repository.dart';
 import '../repositories/campaign_repository.dart';
+import '../repositories/conversation_repository.dart';
 import '../repositories/draft_repository.dart';
 import '../repositories/listening_query_repository.dart';
+import '../repositories/publish_state_repository.dart';
 import '../repositories/report_repository.dart';
 import '../repositories/schedule_repository.dart';
 import '../repositories/strategy_repository.dart';
@@ -43,6 +47,8 @@ class LocalMetarixGateway extends ChangeNotifier
         DraftRepository,
         ApprovalRepository,
         ScheduleRepository,
+        PublishStateRepository,
+        ConversationRepository,
         ReportRepository,
         NormalizedMetricRepository,
         ListeningQueryRepository,
@@ -74,10 +80,10 @@ class LocalMetarixGateway extends ChangeNotifier
       _snapshot.users.firstWhere((user) => user.id == _snapshot.currentUserId);
 
   WorkspaceMembership get currentMembership => _snapshot.memberships.firstWhere(
-        (membership) =>
-            membership.userId == _snapshot.currentUserId &&
-            membership.workspaceId == _snapshot.workspace.id,
-      );
+    (membership) =>
+        membership.userId == _snapshot.currentUserId &&
+        membership.workspaceId == _snapshot.workspace.id,
+  );
 
   UserRole get currentUserRole => currentMembership.role;
 
@@ -92,7 +98,8 @@ class LocalMetarixGateway extends ChangeNotifier
     notifyListeners();
   }
 
-  String createId(String prefix) => '$prefix-${DateTime.now().microsecondsSinceEpoch}';
+  String createId(String prefix) =>
+      '$prefix-${DateTime.now().microsecondsSinceEpoch}';
 
   Future<void> _replaceSnapshot(MetarixSnapshot snapshot) async {
     _snapshot = snapshot;
@@ -125,7 +132,11 @@ class LocalMetarixGateway extends ChangeNotifier
   Future<void> saveAssetRecord(AssetRecord record) async {
     await _replaceSnapshot(
       _snapshot.copyWith(
-        assetRecords: _upsert(_snapshot.assetRecords, record, (entry) => entry.id),
+        assetRecords: _upsert(
+          _snapshot.assetRecords,
+          record,
+          (entry) => entry.id,
+        ),
       ),
     );
   }
@@ -145,7 +156,11 @@ class LocalMetarixGateway extends ChangeNotifier
   Future<void> saveCommentRecord(CommentRecord record) async {
     await _replaceSnapshot(
       _snapshot.copyWith(
-        commentRecords: _upsert(_snapshot.commentRecords, record, (entry) => entry.id),
+        commentRecords: _upsert(
+          _snapshot.commentRecords,
+          record,
+          (entry) => entry.id,
+        ),
       ),
     );
   }
@@ -165,7 +180,8 @@ class LocalMetarixGateway extends ChangeNotifier
   List<CommentRecord> commentsFor(String objectType, String objectId) {
     return _snapshot.commentRecords
         .where(
-          (entry) => entry.objectType == objectType && entry.objectId == objectId,
+          (entry) =>
+              entry.objectType == objectType && entry.objectId == objectId,
         )
         .toList()
       ..sort((left, right) => left.createdAt.compareTo(right.createdAt));
@@ -174,7 +190,8 @@ class LocalMetarixGateway extends ChangeNotifier
   List<AssignmentRecord> assignmentsFor(String objectType, String objectId) {
     return _snapshot.assignmentRecords
         .where(
-          (entry) => entry.objectType == objectType && entry.objectId == objectId,
+          (entry) =>
+              entry.objectType == objectType && entry.objectId == objectId,
         )
         .toList()
       ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
@@ -203,7 +220,9 @@ class LocalMetarixGateway extends ChangeNotifier
               draft.assetRefs.any((ref) => ref.id == asset.id),
         );
         final linkedLibrary = _snapshot.contentLibraryEntries.any(
-          (entry) => entry.campaignId == campaignId && entry.assetIds.contains(asset.id),
+          (entry) =>
+              entry.campaignId == campaignId &&
+              entry.assetIds.contains(asset.id),
         );
         if (!linkedDraft && !linkedLibrary) {
           return false;
@@ -221,7 +240,9 @@ class LocalMetarixGateway extends ChangeNotifier
       ..._snapshot.campaigns
           .where(
             (campaign) => _snapshot.contentLibraryEntries.any(
-              (entry) => entry.campaignId == campaign.id && entry.assetIds.contains(assetId),
+              (entry) =>
+                  entry.campaignId == campaign.id &&
+                  entry.assetIds.contains(assetId),
             ),
           )
           .map((campaign) => 'Campaign: ${campaign.name}'),
@@ -235,34 +256,33 @@ class LocalMetarixGateway extends ChangeNotifier
     DateTime? from,
     DateTime? to,
   }) {
-    final events = _snapshot.activityEvents.where((event) {
-      if (event.workspaceId != workspaceId) {
-        return false;
-      }
-      if (objectType != null && event.objectType != objectType) {
-        return false;
-      }
-      if (objectId != null && event.objectId != objectId) {
-        return false;
-      }
-      if (from != null && event.occurredAt.isBefore(from)) {
-        return false;
-      }
-      if (to != null && event.occurredAt.isAfter(to)) {
-        return false;
-      }
-      return true;
-    }).toList()
-      ..sort((left, right) => right.occurredAt.compareTo(left.occurredAt));
+    final events =
+        _snapshot.activityEvents.where((event) {
+            if (event.workspaceId != workspaceId) {
+              return false;
+            }
+            if (objectType != null && event.objectType != objectType) {
+              return false;
+            }
+            if (objectId != null && event.objectId != objectId) {
+              return false;
+            }
+            if (from != null && event.occurredAt.isBefore(from)) {
+              return false;
+            }
+            if (to != null && event.occurredAt.isAfter(to)) {
+              return false;
+            }
+            return true;
+          }).toList()
+          ..sort((left, right) => right.occurredAt.compareTo(left.occurredAt));
     return events;
   }
 
   @override
   Future<void> recordActivityEvent(ActivityEvent event) async {
     await _replaceSnapshot(
-      _snapshot.copyWith(
-        activityEvents: [..._snapshot.activityEvents, event],
-      ),
+      _snapshot.copyWith(activityEvents: [..._snapshot.activityEvents, event]),
     );
   }
 
@@ -322,7 +342,9 @@ class LocalMetarixGateway extends ChangeNotifier
   }
 
   @override
-  Future<WorkspaceMembership> saveMembership(WorkspaceMembership membership) async {
+  Future<WorkspaceMembership> saveMembership(
+    WorkspaceMembership membership,
+  ) async {
     final nextMemberships = _upsert(
       _snapshot.memberships,
       membership,
@@ -337,8 +359,9 @@ class LocalMetarixGateway extends ChangeNotifier
     return StrategyRecord(
       workspace: _snapshot.workspace,
       brand: _snapshot.brand,
-      businessGoals:
-          _snapshot.businessGoals.where((goal) => goal.brandId == brandId).toList(),
+      businessGoals: _snapshot.businessGoals
+          .where((goal) => goal.brandId == brandId)
+          .toList(),
       socialGoals: _snapshot.socialGoals
           .where(
             (goal) => _snapshot.businessGoals
@@ -347,15 +370,21 @@ class LocalMetarixGateway extends ChangeNotifier
                 .contains(goal.businessGoalId),
           )
           .toList(),
-      personas: _snapshot.personas.where((entry) => entry.brandId == brandId).toList(),
-      competitors:
-          _snapshot.competitors.where((entry) => entry.brandId == brandId).toList(),
-      swotEntries:
-          _snapshot.swotEntries.where((entry) => entry.brandId == brandId).toList(),
-      auditFindings:
-          _snapshot.auditFindings.where((entry) => entry.brandId == brandId).toList(),
-      contentPillars:
-          _snapshot.contentPillars.where((entry) => entry.brandId == brandId).toList(),
+      personas: _snapshot.personas
+          .where((entry) => entry.brandId == brandId)
+          .toList(),
+      competitors: _snapshot.competitors
+          .where((entry) => entry.brandId == brandId)
+          .toList(),
+      swotEntries: _snapshot.swotEntries
+          .where((entry) => entry.brandId == brandId)
+          .toList(),
+      auditFindings: _snapshot.auditFindings
+          .where((entry) => entry.brandId == brandId)
+          .toList(),
+      contentPillars: _snapshot.contentPillars
+          .where((entry) => entry.brandId == brandId)
+          .toList(),
     );
   }
 
@@ -376,11 +405,7 @@ class LocalMetarixGateway extends ChangeNotifier
   Future<void> saveSocialGoal(SocialGoal goal) async {
     await _replaceSnapshot(
       _snapshot.copyWith(
-        socialGoals: _upsert(
-          _snapshot.socialGoals,
-          goal,
-          (entry) => entry.id,
-        ),
+        socialGoals: _upsert(_snapshot.socialGoals, goal, (entry) => entry.id),
       ),
     );
   }
@@ -455,7 +480,9 @@ class LocalMetarixGateway extends ChangeNotifier
 
   @override
   Future<List<Campaign>> listCampaigns(String brandId) async {
-    return _snapshot.campaigns.where((campaign) => campaign.brandId == brandId).toList();
+    return _snapshot.campaigns
+        .where((campaign) => campaign.brandId == brandId)
+        .toList();
   }
 
   @override
@@ -473,7 +500,9 @@ class LocalMetarixGateway extends ChangeNotifier
 
   @override
   Future<List<EvergreenContentItem>> listEvergreenItems(String brandId) async {
-    return _snapshot.evergreenItems.where((item) => item.brandId == brandId).toList();
+    return _snapshot.evergreenItems
+        .where((item) => item.brandId == brandId)
+        .toList();
   }
 
   @override
@@ -505,7 +534,8 @@ class LocalMetarixGateway extends ChangeNotifier
   }
 
   @override
-  Future<List<ApprovalRecord>> listApprovalRecords() async => _snapshot.approvals;
+  Future<List<ApprovalRecord>> listApprovalRecords() async =>
+      _snapshot.approvals;
 
   @override
   Future<ScheduleRecord> saveScheduleRecord(ScheduleRecord record) async {
@@ -519,7 +549,70 @@ class LocalMetarixGateway extends ChangeNotifier
   }
 
   @override
-  Future<List<ScheduleRecord>> listScheduleRecords() async => _snapshot.schedules;
+  Future<List<ScheduleRecord>> listScheduleRecords() async =>
+      _snapshot.schedules;
+
+  @override
+  Future<ScheduledPostRecord> saveScheduledPostRecord(
+    ScheduledPostRecord record,
+  ) async {
+    final nextScheduledPosts = _upsert(
+      _snapshot.scheduledPosts,
+      record,
+      (entry) => entry.id,
+    );
+    await _replaceSnapshot(
+      _snapshot.copyWith(scheduledPosts: nextScheduledPosts),
+    );
+    return record;
+  }
+
+  @override
+  Future<List<ScheduledPostRecord>> listScheduledPostRecords() async =>
+      _snapshot.scheduledPosts;
+
+  @override
+  Future<ConversationThread> saveConversationThread(
+    ConversationThread thread,
+  ) async {
+    final nextThreads = _upsert(
+      _snapshot.conversationThreads,
+      thread,
+      (entry) => entry.threadId,
+    );
+    await _replaceSnapshot(
+      _snapshot.copyWith(conversationThreads: nextThreads),
+    );
+    return thread;
+  }
+
+  @override
+  Future<List<ConversationThread>> listConversationThreads() async =>
+      _snapshot.conversationThreads;
+
+  @override
+  Future<ConversationMessage> saveConversationMessage(
+    ConversationMessage message,
+  ) async {
+    final nextMessages = _upsert(
+      _snapshot.conversationMessages,
+      message,
+      (entry) => entry.messageId,
+    );
+    await _replaceSnapshot(
+      _snapshot.copyWith(conversationMessages: nextMessages),
+    );
+    return message;
+  }
+
+  @override
+  Future<List<ConversationMessage>> listConversationMessages(
+    String threadId,
+  ) async {
+    return _snapshot.conversationMessages
+        .where((entry) => entry.threadId == threadId)
+        .toList();
+  }
 
   @override
   Future<ReportSnapshot> loadReportData() async {
@@ -574,8 +667,12 @@ class LocalMetarixGateway extends ChangeNotifier
   }
 
   @override
-  Future<void> saveNormalizedMetrics(List<NormalizedMetricRecord> metrics) async {
-    final nextMetrics = List<NormalizedMetricRecord>.from(_snapshot.normalizedMetrics);
+  Future<void> saveNormalizedMetrics(
+    List<NormalizedMetricRecord> metrics,
+  ) async {
+    final nextMetrics = List<NormalizedMetricRecord>.from(
+      _snapshot.normalizedMetrics,
+    );
     for (final metric in metrics) {
       final index = nextMetrics.indexWhere((entry) => entry.id == metric.id);
       if (index == -1) {
@@ -724,17 +821,9 @@ class LocalMetarixGateway extends ChangeNotifier
         (value) => value + 1,
         ifAbsent: () => 1,
       );
-      bySource.update(
-        mention.source,
-        (value) => value + 1,
-        ifAbsent: () => 1,
-      );
+      bySource.update(mention.source, (value) => value + 1, ifAbsent: () => 1);
       final topic = mention.excerpt.split(' ').take(2).join(' ');
-      byTopic.update(
-        topic,
-        (value) => value + 1,
-        ifAbsent: () => 1,
-      );
+      byTopic.update(topic, (value) => value + 1, ifAbsent: () => 1);
     }
 
     groups.addAll(
@@ -774,7 +863,9 @@ class LocalMetarixGateway extends ChangeNotifier
     K Function(T entry) keySelector,
   ) {
     final key = keySelector(next);
-    final existingIndex = source.indexWhere((entry) => keySelector(entry) == key);
+    final existingIndex = source.indexWhere(
+      (entry) => keySelector(entry) == key,
+    );
     final updated = List<T>.from(source);
     if (existingIndex == -1) {
       updated.add(next);

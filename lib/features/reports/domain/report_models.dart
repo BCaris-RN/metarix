@@ -12,12 +12,12 @@ enum ReportActionType {
 
 extension ReportActionTypeX on ReportActionType {
   String get label => switch (this) {
-        ReportActionType.continueAction => 'Continue',
-        ReportActionType.stopAction => 'Stop',
-        ReportActionType.startAction => 'Start',
-        ReportActionType.investigate => 'Investigate',
-        ReportActionType.escalate => 'Escalate',
-      };
+    ReportActionType.continueAction => 'Continue',
+    ReportActionType.stopAction => 'Stop',
+    ReportActionType.startAction => 'Start',
+    ReportActionType.investigate => 'Investigate',
+    ReportActionType.escalate => 'Escalate',
+  };
 
   static ReportActionType fromName(String value) =>
       ReportActionType.values.firstWhere((type) => type.name == value);
@@ -37,18 +37,18 @@ class ReportPeriod {
   final DateTime end;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'label': label,
-        'start': start.toIso8601String(),
-        'end': end.toIso8601String(),
-      };
+    'id': id,
+    'label': label,
+    'start': start.toIso8601String(),
+    'end': end.toIso8601String(),
+  };
 
   factory ReportPeriod.fromJson(Map<String, dynamic> json) => ReportPeriod(
-        id: json['id'] as String,
-        label: json['label'] as String,
-        start: DateTime.parse(json['start'] as String),
-        end: DateTime.parse(json['end'] as String),
-      );
+    id: json['id'] as String,
+    label: json['label'] as String,
+    start: DateTime.parse(json['start'] as String),
+    end: DateTime.parse(json['end'] as String),
+  );
 }
 
 class ChannelPerformanceRecord {
@@ -73,15 +73,15 @@ class ChannelPerformanceRecord {
   final double sentimentScore;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'reportPeriodId': reportPeriodId,
-        'channel': channel.name,
-        'reach': reach,
-        'impressions': impressions,
-        'engagements': engagements,
-        'clicks': clicks,
-        'sentimentScore': sentimentScore,
-      };
+    'id': id,
+    'reportPeriodId': reportPeriodId,
+    'channel': channel.name,
+    'reach': reach,
+    'impressions': impressions,
+    'engagements': engagements,
+    'clicks': clicks,
+    'sentimentScore': sentimentScore,
+  };
 
   factory ChannelPerformanceRecord.fromJson(Map<String, dynamic> json) =>
       ChannelPerformanceRecord(
@@ -110,18 +110,18 @@ class StandoutResult {
   final String detail;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'reportPeriodId': reportPeriodId,
-        'headline': headline,
-        'detail': detail,
-      };
+    'id': id,
+    'reportPeriodId': reportPeriodId,
+    'headline': headline,
+    'detail': detail,
+  };
 
   factory StandoutResult.fromJson(Map<String, dynamic> json) => StandoutResult(
-        id: json['id'] as String,
-        reportPeriodId: json['reportPeriodId'] as String,
-        headline: json['headline'] as String,
-        detail: json['detail'] as String,
-      );
+    id: json['id'] as String,
+    reportPeriodId: json['reportPeriodId'] as String,
+    headline: json['headline'] as String,
+    detail: json['detail'] as String,
+  );
 }
 
 class Takeaway {
@@ -164,24 +164,24 @@ class Takeaway {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'reportPeriodId': reportPeriodId,
-        'title': title,
-        'whatHappened': whatHappened,
-        'whyItHappened': whyItHappened,
-        'howWeKnow': howWeKnow,
-        'whatWeLearned': whatWeLearned,
-      };
+    'id': id,
+    'reportPeriodId': reportPeriodId,
+    'title': title,
+    'whatHappened': whatHappened,
+    'whyItHappened': whyItHappened,
+    'howWeKnow': howWeKnow,
+    'whatWeLearned': whatWeLearned,
+  };
 
   factory Takeaway.fromJson(Map<String, dynamic> json) => Takeaway(
-        id: json['id'] as String,
-        reportPeriodId: json['reportPeriodId'] as String,
-        title: json['title'] as String,
-        whatHappened: json['whatHappened'] as String,
-        whyItHappened: json['whyItHappened'] as String,
-        howWeKnow: json['howWeKnow'] as String,
-        whatWeLearned: json['whatWeLearned'] as String,
-      );
+    id: json['id'] as String,
+    reportPeriodId: json['reportPeriodId'] as String,
+    title: json['title'] as String,
+    whatHappened: json['whatHappened'] as String,
+    whyItHappened: json['whyItHappened'] as String,
+    howWeKnow: json['howWeKnow'] as String,
+    whatWeLearned: json['whatWeLearned'] as String,
+  );
 }
 
 class LearningEntry {
@@ -196,16 +196,16 @@ class LearningEntry {
   final String text;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'reportPeriodId': reportPeriodId,
-        'text': text,
-      };
+    'id': id,
+    'reportPeriodId': reportPeriodId,
+    'text': text,
+  };
 
   factory LearningEntry.fromJson(Map<String, dynamic> json) => LearningEntry(
-        id: json['id'] as String,
-        reportPeriodId: json['reportPeriodId'] as String,
-        text: json['text'] as String,
-      );
+    id: json['id'] as String,
+    reportPeriodId: json['reportPeriodId'] as String,
+    text: json['text'] as String,
+  );
 }
 
 class Recommendation {
@@ -248,24 +248,24 @@ class Recommendation {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'reportPeriodId': reportPeriodId,
-        'title': title,
-        'actionType': actionType.name,
-        'rationale': rationale,
-        'owner': owner,
-        'expectedBenefit': expectedBenefit,
-      };
+    'id': id,
+    'reportPeriodId': reportPeriodId,
+    'title': title,
+    'actionType': actionType.name,
+    'rationale': rationale,
+    'owner': owner,
+    'expectedBenefit': expectedBenefit,
+  };
 
   factory Recommendation.fromJson(Map<String, dynamic> json) => Recommendation(
-        id: json['id'] as String,
-        reportPeriodId: json['reportPeriodId'] as String,
-        title: json['title'] as String,
-        actionType: ReportActionTypeX.fromName(json['actionType'] as String),
-        rationale: json['rationale'] as String,
-        owner: json['owner'] as String,
-        expectedBenefit: json['expectedBenefit'] as String,
-      );
+    id: json['id'] as String,
+    reportPeriodId: json['reportPeriodId'] as String,
+    title: json['title'] as String,
+    actionType: ReportActionTypeX.fromName(json['actionType'] as String),
+    rationale: json['rationale'] as String,
+    owner: json['owner'] as String,
+    expectedBenefit: json['expectedBenefit'] as String,
+  );
 }
 
 class ReportSnapshot {

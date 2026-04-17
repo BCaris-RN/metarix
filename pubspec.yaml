@@ -48,6 +48,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/demo/metarix_seed/
+    - assets/demo/reports/
     - caris/connector_capability_registry.json
     - caris/channel_action_permissions.json
     - caris/approval_policy_matrix.json

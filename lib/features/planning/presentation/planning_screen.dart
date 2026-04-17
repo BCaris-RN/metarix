@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/metarix_scope.dart';
 import '../../admin/domain/admin_models.dart';
+import '../../publish/domain/publish_models.dart';
 import '../../shared/domain/core_models.dart';
 import '../../workflow/domain/workflow_models.dart';
 import '../application/planning_controller.dart';
@@ -31,22 +32,24 @@ class _PlanningScreenState extends State<PlanningScreen> {
       services.gateway.currentUserRole,
       RuntimeAction.editDraft,
     );
+    final publishController = services.publishController;
 
     return AnimatedBuilder(
-      animation: controller,
+      animation: Listenable.merge([controller, publishController]),
       builder: (context, _) {
         final campaigns = controller.campaigns;
         final selectedCampaign = campaigns.isEmpty
             ? null
             : campaigns.firstWhere(
-                (campaign) => campaign.id == (_selectedCampaignId ?? campaigns.first.id),
+                (campaign) =>
+                    campaign.id == (_selectedCampaignId ?? campaigns.first.id),
                 orElse: () => campaigns.first,
               );
         final drafts = selectedCampaign == null
             ? controller.drafts
             : controller.drafts
-                .where((draft) => draft.campaignId == selectedCampaign.id)
-                .toList();
+                  .where((draft) => draft.campaignId == selectedCampaign.id)
+                  .toList();
         final selectedDraft = drafts.isEmpty
             ? null
             : drafts.firstWhere(
@@ -71,7 +74,8 @@ class _PlanningScreenState extends State<PlanningScreen> {
                     title: 'Campaigns',
                     actionLabel: 'New campaign',
                     actionEnabled: canCreateCampaign.allowed,
-                    onAction: () => _showCampaignDialog(context, controller, null),
+                    onAction: () =>
+                        _showCampaignDialog(context, controller, null),
                     body: Column(
                       children: campaigns
                           .map(
@@ -92,10 +96,10 @@ class _PlanningScreenState extends State<PlanningScreen> {
                                 icon: const Icon(Icons.edit_outlined),
                                 onPressed: canCreateCampaign.allowed
                                     ? () => _showCampaignDialog(
-                                          context,
-                                          controller,
-                                          campaign,
-                                        )
+                                        context,
+                                        controller,
+                                        campaign,
+                                      )
                                     : null,
                               ),
                             ),
@@ -110,15 +114,16 @@ class _PlanningScreenState extends State<PlanningScreen> {
                   child: _Panel(
                     title: 'Campaign detail',
                     actionLabel: 'New draft',
-                    actionEnabled: canEditDraft.allowed && selectedCampaign != null,
+                    actionEnabled:
+                        canEditDraft.allowed && selectedCampaign != null,
                     onAction: selectedCampaign == null
                         ? null
                         : () => _showDraftDialog(
-                              context,
-                              controller,
-                              selectedCampaign,
-                              null,
-                            ),
+                            context,
+                            controller,
+                            selectedCampaign,
+                            null,
+                          ),
                     body: selectedCampaign == null
                         ? const Text('Select a campaign to see details.')
                         : Column(
@@ -134,31 +139,43 @@ class _PlanningScreenState extends State<PlanningScreen> {
                               Wrap(
                                 spacing: 8,
                                 children: selectedCampaign.channels
-                                    .map((channel) => Chip(label: Text(channel.label)))
+                                    .map(
+                                      (channel) =>
+                                          Chip(label: Text(channel.label)),
+                                    )
                                     .toList(),
                               ),
                               const SizedBox(height: 12),
                               const Text('Drafts'),
                               const SizedBox(height: 8),
-                              ...drafts.map(
-                                (draft) => ListTile(
+                              ...drafts.map((draft) {
+                                final publishStatus =
+                                    publishController
+                                        .recordForDraft(draft.id)
+                                        ?.status ??
+                                    PublishRecordStatus.draft;
+                                return ListTile(
                                   selected: selectedDraft?.id == draft.id,
                                   title: Text(draft.title),
-                                  subtitle: Text(draft.currentState.label),
-                                  onTap: () => setState(() => _selectedDraftId = draft.id),
+                                  subtitle: Text(
+                                    '${draft.currentState.label} | Publish: ${publishStatus.label}',
+                                  ),
+                                  onTap: () => setState(
+                                    () => _selectedDraftId = draft.id,
+                                  ),
                                   trailing: IconButton(
                                     icon: const Icon(Icons.edit_outlined),
                                     onPressed: canEditDraft.allowed
                                         ? () => _showDraftDialog(
-                                              context,
-                                              controller,
-                                              selectedCampaign,
-                                              draft,
-                                            )
+                                            context,
+                                            controller,
+                                            selectedCampaign,
+                                            draft,
+                                          )
                                         : null,
                                   ),
-                                ),
-                              ),
+                                );
+                              }),
                             ],
                           ),
                   ),
@@ -177,11 +194,16 @@ class _PlanningScreenState extends State<PlanningScreen> {
                     actionEnabled: true,
                     onAction: () {
                       setState(() {
-                        _calendarMonth =
-                            DateTime(_calendarMonth.year, _calendarMonth.month + 1, 1);
+                        _calendarMonth = DateTime(
+                          _calendarMonth.year,
+                          _calendarMonth.month + 1,
+                          1,
+                        );
                       });
                     },
-                    body: _CalendarGrid(days: controller.monthView(_calendarMonth)),
+                    body: _CalendarGrid(
+                      days: controller.monthView(_calendarMonth),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -192,33 +214,56 @@ class _PlanningScreenState extends State<PlanningScreen> {
                       _Panel(
                         title: 'Draft detail',
                         actionLabel: 'Edit draft',
-                        actionEnabled: canEditDraft.allowed && selectedCampaign != null && selectedDraft != null,
-                        onAction: selectedCampaign == null || selectedDraft == null
+                        actionEnabled:
+                            canEditDraft.allowed &&
+                            selectedCampaign != null &&
+                            selectedDraft != null,
+                        onAction:
+                            selectedCampaign == null || selectedDraft == null
                             ? null
                             : () => _showDraftDialog(
-                                  context,
-                                  controller,
-                                  selectedCampaign,
-                                  selectedDraft,
-                                ),
+                                context,
+                                controller,
+                                selectedCampaign,
+                                selectedDraft,
+                              ),
                         body: selectedDraft == null
                             ? const Text('Select a draft to inspect it.')
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    selectedDraft.title,
-                                    style: Theme.of(context).textTheme.titleLarge,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(selectedDraft.copy),
-                                  const SizedBox(height: 8),
-                                  Text('Network: ${selectedDraft.targetNetwork.label}'),
-                                  Text(
-                                    'Planned at: ${selectedDraft.plannedPublishAt?.toIso8601String().split('T').join(' ') ?? 'Not set'}',
-                                  ),
-                                  Text('State: ${selectedDraft.currentState.label}'),
-                                ],
+                            : Builder(
+                                builder: (context) {
+                                  final publishStatus =
+                                      publishController
+                                          .recordForDraft(selectedDraft.id)
+                                          ?.status ??
+                                      PublishRecordStatus.draft;
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        selectedDraft.title,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.titleLarge,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(selectedDraft.copy),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Network: ${selectedDraft.targetNetwork.label}',
+                                      ),
+                                      Text(
+                                        'Planned at: ${selectedDraft.plannedPublishAt?.toIso8601String().split('T').join(' ') ?? 'Not set'}',
+                                      ),
+                                      Text(
+                                        'State: ${selectedDraft.currentState.label}',
+                                      ),
+                                      Text(
+                                        'Publish status: ${publishStatus.label}',
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                       ),
                       const SizedBox(height: 16),
@@ -226,7 +271,8 @@ class _PlanningScreenState extends State<PlanningScreen> {
                         title: 'Evergreen library',
                         actionLabel: 'Add evergreen',
                         actionEnabled: canEditDraft.allowed,
-                        onAction: () => _showEvergreenDialog(context, controller, null),
+                        onAction: () =>
+                            _showEvergreenDialog(context, controller, null),
                         body: Column(
                           children: controller.evergreenItems
                               .map(
@@ -269,12 +315,17 @@ class _PlanningScreenState extends State<PlanningScreen> {
   ) async {
     final services = MetarixScope.of(context);
     final nameController = TextEditingController(text: existing?.name ?? '');
-    final summaryController = TextEditingController(text: existing?.summary ?? '');
-    final channelsController = TextEditingController(
-      text: existing?.channels.map((channel) => channel.name).join(', ') ?? 'linkedin, instagram',
+    final summaryController = TextEditingController(
+      text: existing?.summary ?? '',
     );
-    final initialPillar =
-        controller.contentPillars.isEmpty ? null : controller.contentPillars.first;
+    final channelsController = TextEditingController(
+      text:
+          existing?.channels.map((channel) => channel.name).join(', ') ??
+          'linkedin, instagram',
+    );
+    final initialPillar = controller.contentPillars.isEmpty
+        ? null
+        : controller.contentPillars.first;
     String? selectedPillarId = existing?.contentPillarId ?? initialPillar?.id;
     final saved = await showDialog<bool>(
       context: context,
@@ -295,7 +346,9 @@ class _PlanningScreenState extends State<PlanningScreen> {
               ),
               TextField(
                 controller: channelsController,
-                decoration: const InputDecoration(labelText: 'Channels (comma separated enum names)'),
+                decoration: const InputDecoration(
+                  labelText: 'Channels (comma separated enum names)',
+                ),
               ),
               DropdownButtonFormField<String>(
                 initialValue: selectedPillarId,
@@ -339,7 +392,8 @@ class _PlanningScreenState extends State<PlanningScreen> {
         name: nameController.text,
         summary: summaryController.text,
         startDate: existing?.startDate ?? DateTime.now(),
-        endDate: existing?.endDate ?? DateTime.now().add(const Duration(days: 30)),
+        endDate:
+            existing?.endDate ?? DateTime.now().add(const Duration(days: 30)),
         channels: _parseChannels(channelsController.text),
         contentPillarId: selectedPillarId ?? '',
       ),
@@ -360,7 +414,8 @@ class _PlanningScreenState extends State<PlanningScreen> {
     );
     SocialChannel selectedChannel =
         existing?.targetNetwork ?? campaign.channels.first;
-    String selectedPillarId = existing?.contentPillarId ?? campaign.contentPillarId;
+    String selectedPillarId =
+        existing?.contentPillarId ?? campaign.contentPillarId;
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -414,7 +469,9 @@ class _PlanningScreenState extends State<PlanningScreen> {
               ),
               TextField(
                 controller: assetController,
-                decoration: const InputDecoration(labelText: 'Asset labels (comma separated)'),
+                decoration: const InputDecoration(
+                  labelText: 'Asset labels (comma separated)',
+                ),
               ),
             ],
           ),
@@ -435,8 +492,10 @@ class _PlanningScreenState extends State<PlanningScreen> {
       return;
     }
 
-    final approvalRequirement =
-        services.policies.approvalRequirementFor(selectedChannel, 'publish_attempt');
+    final approvalRequirement = services.policies.approvalRequirementFor(
+      selectedChannel,
+      'publish_attempt',
+    );
 
     await controller.saveDraft(
       PostDraft(
@@ -448,7 +507,8 @@ class _PlanningScreenState extends State<PlanningScreen> {
         copy: copyController.text,
         assetRefs: _buildAssetRefs(assetController.text, services),
         plannedPublishAt:
-            existing?.plannedPublishAt ?? DateTime.now().add(const Duration(days: 3)),
+            existing?.plannedPublishAt ??
+            DateTime.now().add(const Duration(days: 3)),
         currentState: existing?.currentState ?? ContentState.draft,
         requiredApproval: approvalRequirement,
         evidenceCodes: existing?.evidenceCodes ?? const ['draft_snapshot'],
@@ -463,14 +523,19 @@ class _PlanningScreenState extends State<PlanningScreen> {
   ) async {
     final services = MetarixScope.of(context);
     final titleController = TextEditingController(text: existing?.title ?? '');
-    final summaryController = TextEditingController(text: existing?.summary ?? '');
-    final initialPillar =
-        controller.contentPillars.isEmpty ? null : controller.contentPillars.first;
+    final summaryController = TextEditingController(
+      text: existing?.summary ?? '',
+    );
+    final initialPillar = controller.contentPillars.isEmpty
+        ? null
+        : controller.contentPillars.first;
     String? selectedPillarId = existing?.contentPillarId ?? initialPillar?.id;
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(existing == null ? 'New evergreen item' : 'Edit evergreen item'),
+        title: Text(
+          existing == null ? 'New evergreen item' : 'Edit evergreen item',
+        ),
         content: SizedBox(
           width: 420,
           child: Column(
@@ -526,7 +591,10 @@ class _PlanningScreenState extends State<PlanningScreen> {
         summary: summaryController.text,
         contentPillarId: selectedPillarId ?? '',
         assetRefs: const [],
-        suggestedChannels: const [SocialChannel.instagram, SocialChannel.linkedin],
+        suggestedChannels: const [
+          SocialChannel.instagram,
+          SocialChannel.linkedin,
+        ],
       ),
     );
   }
@@ -583,7 +651,10 @@ class _Panel extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                 ),
                 TextButton.icon(
                   onPressed: actionEnabled ? onAction : null,
@@ -630,9 +701,14 @@ class _CalendarGrid extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${day.date.day}', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                '${day.date.day}',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 6),
-              ...day.drafts.take(2).map(
+              ...day.drafts
+                  .take(2)
+                  .map(
                     (draft) => Text(
                       draft.title,
                       maxLines: 2,

@@ -5,6 +5,8 @@ import '../features/admin/application/admin_controller.dart';
 import '../features/assets/application/asset_library_controller.dart';
 import '../features/assets/data/local_asset_repository.dart';
 import '../features/collaboration/application/collaboration_controller.dart';
+import '../features/conversation/application/conversation_controller.dart';
+import '../features/conversation/application/conversation_state_transition_service.dart';
 import '../features/connectors/adapters/channel_metric_mapper.dart';
 import '../features/exports/application/export_service.dart';
 import '../features/exports/formatters/evidence_export_formatter.dart';
@@ -12,12 +14,16 @@ import '../features/exports/formatters/report_export_formatter.dart';
 import '../features/exports/formatters/strategy_export_formatter.dart';
 import '../features/listening/application/listening_controller.dart';
 import '../features/planning/application/planning_controller.dart';
+import '../features/publish/application/publish_controller.dart';
+import '../features/publish/application/publish_state_transition_service.dart';
 import '../features/recommendations/recommendation_engine.dart';
 import '../features/reports/application/metric_normalizer.dart';
 import '../features/reports/application/report_controller.dart';
 import '../features/search/application/global_search_service.dart';
 import '../features/strategy/application/strategy_controller.dart';
 import '../features/workflow/application/workflow_controller.dart';
+import '../metarix_core/connectors/connector_bundle.dart';
+import '../metarix_core/connectors/demo/demo_connector_bundle.dart';
 import '../runtime/jobs/job_queue_service.dart';
 import '../services/access_control_service.dart';
 import '../services/caris_policy_service.dart';
@@ -36,6 +42,7 @@ class AppServices {
     required this.accessControlService,
     required this.publishPostureEvaluator,
     required this.connectorRegistry,
+    required this.backendConnectors,
     required this.metricNormalizer,
     required this.recommendationEngine,
     required this.exportService,
@@ -46,6 +53,8 @@ class AppServices {
     required this.collaborationController,
     required this.strategyController,
     required this.planningController,
+    required this.conversationController,
+    required this.publishController,
     required this.workflowController,
     required this.reportController,
     required this.listeningController,
@@ -60,6 +69,7 @@ class AppServices {
   final AccessControlService accessControlService;
   final PublishPostureEvaluator publishPostureEvaluator;
   final ConnectorRegistry connectorRegistry;
+  final ConnectorBundle backendConnectors;
   final MetricNormalizer metricNormalizer;
   final RecommendationEngine recommendationEngine;
   final ExportService exportService;
@@ -70,6 +80,8 @@ class AppServices {
   final CollaborationController collaborationController;
   final StrategyController strategyController;
   final PlanningController planningController;
+  final ConversationController conversationController;
+  final PublishController publishController;
   final WorkflowController workflowController;
   final ReportController reportController;
   final ListeningController listeningController;
@@ -91,6 +103,10 @@ class AppServices {
       scheduleValidator,
     );
     final connectorRegistry = ConnectorRegistry(policies);
+    final backendConnectors = _selectBackendConnectors(backendConfig);
+    const conversationStateTransitionService =
+        ConversationStateTransitionService();
+    const publishStateTransitionService = PublishStateTransitionService();
     final metricNormalizer = MetricNormalizer(
       connectorRegistry,
       const ChannelMetricMapper(),
@@ -110,6 +126,17 @@ class AppServices {
       gateway,
     );
     final collaborationController = CollaborationController(gateway);
+    final publishController = PublishController(
+      gateway,
+      gateway,
+      gateway,
+      publishStateTransitionService,
+    );
+    final conversationController = ConversationController(
+      gateway,
+      gateway,
+      conversationStateTransitionService,
+    );
 
     return AppServices._(
       backendConfig: backendConfig,
@@ -120,6 +147,7 @@ class AppServices {
       accessControlService: accessControlService,
       publishPostureEvaluator: publishPostureEvaluator,
       connectorRegistry: connectorRegistry,
+      backendConnectors: backendConnectors,
       metricNormalizer: metricNormalizer,
       recommendationEngine: recommendationEngine,
       exportService: exportService,
@@ -129,19 +157,38 @@ class AppServices {
       assetLibraryController: assetLibraryController,
       collaborationController: collaborationController,
       strategyController: StrategyController(gateway, gateway),
-      planningController: PlanningController(gateway, gateway, gateway),
+      planningController: PlanningController(
+        gateway,
+        gateway,
+        gateway,
+        gateway,
+        publishStateTransitionService,
+      ),
+      conversationController: conversationController,
+      publishController: publishController,
       workflowController: WorkflowController(
+        gateway,
         gateway,
         gateway,
         gateway,
         gateway,
         accessControlService,
         publishPostureEvaluator,
+        publishStateTransitionService,
       ),
       reportController: ReportController(gateway, gateway),
       listeningController: ListeningController(gateway, gateway),
       adminController: AdminController(gateway, gateway, accessControlService),
     );
+  }
+
+  static ConnectorBundle _selectBackendConnectors(BackendConfig backendConfig) {
+    return switch (backendConfig.mode) {
+      BackendMode.demo => DemoConnectorBundle.create(),
+      // TODO: Replace this fallback with local secret-backed connector
+      // implementations once real platform adapters are available.
+      BackendMode.supabaseRest => DemoConnectorBundle.create(),
+    };
   }
 
   void dispose() {
@@ -155,6 +202,8 @@ class AppServices {
     jobQueueService.dispose();
     strategyController.dispose();
     planningController.dispose();
+    conversationController.dispose();
+    publishController.dispose();
     workflowController.dispose();
     reportController.dispose();
     listeningController.dispose();

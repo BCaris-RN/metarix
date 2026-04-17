@@ -23,15 +23,15 @@ class NormalizedMetricRecord {
   final String source;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'reportPeriodId': reportPeriodId,
-        'channel': channel.name,
-        'family': family.storageName,
-        'value': value,
-        'unit': unit,
-        'metricVersion': metricVersion,
-        'source': source,
-      };
+    'id': id,
+    'reportPeriodId': reportPeriodId,
+    'channel': channel.name,
+    'family': family.storageName,
+    'value': value,
+    'unit': unit,
+    'metricVersion': metricVersion,
+    'source': source,
+  };
 
   factory NormalizedMetricRecord.fromJson(Map<String, dynamic> json) =>
       NormalizedMetricRecord(

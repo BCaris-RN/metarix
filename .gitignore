@@ -171,3 +171,22 @@ fixtures/private/
 #/ Explicit approval is required before any Git action involving them.
 /caris/
 /phoenix/
+
+# === MetaRix local-only runtime boundary ===
+.env
+.env.local
+.env.*.local
+secrets/
+local_runtime/
+local_data/
+local_exports/
+local_reports/
+local_media/
+local_watch/
+local_tokens/
+local_logs/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+runtime_user_config.json

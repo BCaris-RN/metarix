@@ -14,7 +14,9 @@ class MetricNormalizer {
   final ChannelMetricMapper _metricMapper;
   final String _metricVersion;
 
-  List<NormalizedMetricRecord> normalizeForPeriods(List<String> reportPeriodIds) {
+  List<NormalizedMetricRecord> normalizeForPeriods(
+    List<String> reportPeriodIds,
+  ) {
     final records = <NormalizedMetricRecord>[];
     for (final reportPeriodId in reportPeriodIds) {
       for (final channel in SocialChannel.values) {

@@ -7,6 +7,7 @@ import '../features/listening/domain/listening_models.dart';
 import '../features/listening/domain/listening_alert_rule.dart';
 import '../features/listening/domain/share_of_voice_snapshot.dart';
 import '../features/planning/domain/planning_models.dart';
+import '../features/publish/domain/publish_models.dart';
 import '../features/recommendations/domain/recommendation_model.dart';
 import '../features/reports/domain/normalized_metric_record.dart';
 import '../features/reports/domain/report_models.dart';
@@ -14,6 +15,7 @@ import '../features/schedule/domain/schedule_models.dart';
 import '../features/shared/domain/core_models.dart';
 import '../features/strategy/domain/strategy_models.dart';
 import '../features/workflow/domain/workflow_models.dart';
+import '../metarix_core/models/connector_models.dart';
 import '../features/exports/domain/export_artifact.dart';
 import '../runtime/activity/activity_event.dart';
 
@@ -40,6 +42,9 @@ class MetarixSnapshot {
     required this.drafts,
     required this.approvals,
     required this.schedules,
+    required this.scheduledPosts,
+    required this.conversationThreads,
+    required this.conversationMessages,
     required this.reportPeriods,
     required this.comparisonPeriods,
     required this.normalizedMetrics,
@@ -83,6 +88,9 @@ class MetarixSnapshot {
   final List<PostDraft> drafts;
   final List<ApprovalRecord> approvals;
   final List<ScheduleRecord> schedules;
+  final List<ScheduledPostRecord> scheduledPosts;
+  final List<ConversationThread> conversationThreads;
+  final List<ConversationMessage> conversationMessages;
   final List<ReportPeriod> reportPeriods;
   final Map<String, String> comparisonPeriods;
   final List<NormalizedMetricRecord> normalizedMetrics;
@@ -126,6 +134,9 @@ class MetarixSnapshot {
     List<PostDraft>? drafts,
     List<ApprovalRecord>? approvals,
     List<ScheduleRecord>? schedules,
+    List<ScheduledPostRecord>? scheduledPosts,
+    List<ConversationThread>? conversationThreads,
+    List<ConversationMessage>? conversationMessages,
     List<ReportPeriod>? reportPeriods,
     Map<String, String>? comparisonPeriods,
     List<NormalizedMetricRecord>? normalizedMetrics,
@@ -154,7 +165,8 @@ class MetarixSnapshot {
       users: users ?? this.users,
       memberships: memberships ?? this.memberships,
       assetRecords: assetRecords ?? this.assetRecords,
-      contentLibraryEntries: contentLibraryEntries ?? this.contentLibraryEntries,
+      contentLibraryEntries:
+          contentLibraryEntries ?? this.contentLibraryEntries,
       commentRecords: commentRecords ?? this.commentRecords,
       assignmentRecords: assignmentRecords ?? this.assignmentRecords,
       businessGoals: businessGoals ?? this.businessGoals,
@@ -169,6 +181,9 @@ class MetarixSnapshot {
       drafts: drafts ?? this.drafts,
       approvals: approvals ?? this.approvals,
       schedules: schedules ?? this.schedules,
+      scheduledPosts: scheduledPosts ?? this.scheduledPosts,
+      conversationThreads: conversationThreads ?? this.conversationThreads,
+      conversationMessages: conversationMessages ?? this.conversationMessages,
       reportPeriods: reportPeriods ?? this.reportPeriods,
       comparisonPeriods: comparisonPeriods ?? this.comparisonPeriods,
       normalizedMetrics: normalizedMetrics ?? this.normalizedMetrics,
@@ -195,165 +210,224 @@ class MetarixSnapshot {
   }
 
   Map<String, dynamic> toJson() => {
-        'workspace': workspace.toJson(),
-        'brand': brand.toJson(),
-        'currentUserId': currentUserId,
-        'users': users.map((entry) => entry.toJson()).toList(),
-        'memberships': memberships.map((entry) => entry.toJson()).toList(),
-        'assetRecords': assetRecords.map((entry) => entry.toJson()).toList(),
-        'contentLibraryEntries':
-            contentLibraryEntries.map((entry) => entry.toJson()).toList(),
-        'commentRecords': commentRecords.map((entry) => entry.toJson()).toList(),
-        'assignmentRecords':
-            assignmentRecords.map((entry) => entry.toJson()).toList(),
-        'businessGoals': businessGoals.map((entry) => entry.toJson()).toList(),
-        'socialGoals': socialGoals.map((entry) => entry.toJson()).toList(),
-        'personas': personas.map((entry) => entry.toJson()).toList(),
-        'competitors': competitors.map((entry) => entry.toJson()).toList(),
-        'swotEntries': swotEntries.map((entry) => entry.toJson()).toList(),
-        'auditFindings': auditFindings.map((entry) => entry.toJson()).toList(),
-        'contentPillars': contentPillars.map((entry) => entry.toJson()).toList(),
-        'campaigns': campaigns.map((entry) => entry.toJson()).toList(),
-        'evergreenItems': evergreenItems.map((entry) => entry.toJson()).toList(),
-        'drafts': drafts.map((entry) => entry.toJson()).toList(),
-        'approvals': approvals.map((entry) => entry.toJson()).toList(),
-        'schedules': schedules.map((entry) => entry.toJson()).toList(),
-        'reportPeriods': reportPeriods.map((entry) => entry.toJson()).toList(),
-        'comparisonPeriods': comparisonPeriods,
-        'normalizedMetrics':
-            normalizedMetrics.map((entry) => entry.toJson()).toList(),
-        'channelPerformance':
-            channelPerformance.map((entry) => entry.toJson()).toList(),
-        'standoutResults':
-            standoutResults.map((entry) => entry.toJson()).toList(),
-        'takeaways': takeaways.map((entry) => entry.toJson()).toList(),
-        'overallLearnings':
-            overallLearnings.map((entry) => entry.toJson()).toList(),
-        'futureActions': futureActions.map((entry) => entry.toJson()).toList(),
-        'recommendationInsights':
-            recommendationInsights.map((entry) => entry.toJson()).toList(),
-        'successSnapshot': successSnapshot,
-        'topPostPlaceholder': topPostPlaceholder,
-        'listeningQueries':
-            listeningQueries.map((entry) => entry.toJson()).toList(),
-        'mentions': mentions.map((entry) => entry.toJson()).toList(),
-        'spikes': spikes.map((entry) => entry.toJson()).toList(),
-        'shareOfVoiceSnapshots':
-            shareOfVoiceSnapshots.map((entry) => entry.toJson()).toList(),
-        'listeningAlertRules':
-            listeningAlertRules.map((entry) => entry.toJson()).toList(),
-        'competitorWatch':
-            competitorWatch.map((entry) => entry.toJson()).toList(),
-        'sentimentSummary': sentimentSummary.toJson(),
-        'exportArtifacts': exportArtifacts.map((entry) => entry.toJson()).toList(),
-        'activityEvents': activityEvents.map((entry) => entry.toJson()).toList(),
-      };
+    'workspace': workspace.toJson(),
+    'brand': brand.toJson(),
+    'currentUserId': currentUserId,
+    'users': users.map((entry) => entry.toJson()).toList(),
+    'memberships': memberships.map((entry) => entry.toJson()).toList(),
+    'assetRecords': assetRecords.map((entry) => entry.toJson()).toList(),
+    'contentLibraryEntries': contentLibraryEntries
+        .map((entry) => entry.toJson())
+        .toList(),
+    'commentRecords': commentRecords.map((entry) => entry.toJson()).toList(),
+    'assignmentRecords': assignmentRecords
+        .map((entry) => entry.toJson())
+        .toList(),
+    'businessGoals': businessGoals.map((entry) => entry.toJson()).toList(),
+    'socialGoals': socialGoals.map((entry) => entry.toJson()).toList(),
+    'personas': personas.map((entry) => entry.toJson()).toList(),
+    'competitors': competitors.map((entry) => entry.toJson()).toList(),
+    'swotEntries': swotEntries.map((entry) => entry.toJson()).toList(),
+    'auditFindings': auditFindings.map((entry) => entry.toJson()).toList(),
+    'contentPillars': contentPillars.map((entry) => entry.toJson()).toList(),
+    'campaigns': campaigns.map((entry) => entry.toJson()).toList(),
+    'evergreenItems': evergreenItems.map((entry) => entry.toJson()).toList(),
+    'drafts': drafts.map((entry) => entry.toJson()).toList(),
+    'approvals': approvals.map((entry) => entry.toJson()).toList(),
+    'schedules': schedules.map((entry) => entry.toJson()).toList(),
+    'scheduledPosts': scheduledPosts.map((entry) => entry.toJson()).toList(),
+    'conversationThreads': conversationThreads
+        .map((entry) => entry.toJson())
+        .toList(),
+    'conversationMessages': conversationMessages
+        .map((entry) => entry.toJson())
+        .toList(),
+    'reportPeriods': reportPeriods.map((entry) => entry.toJson()).toList(),
+    'comparisonPeriods': comparisonPeriods,
+    'normalizedMetrics': normalizedMetrics
+        .map((entry) => entry.toJson())
+        .toList(),
+    'channelPerformance': channelPerformance
+        .map((entry) => entry.toJson())
+        .toList(),
+    'standoutResults': standoutResults.map((entry) => entry.toJson()).toList(),
+    'takeaways': takeaways.map((entry) => entry.toJson()).toList(),
+    'overallLearnings': overallLearnings
+        .map((entry) => entry.toJson())
+        .toList(),
+    'futureActions': futureActions.map((entry) => entry.toJson()).toList(),
+    'recommendationInsights': recommendationInsights
+        .map((entry) => entry.toJson())
+        .toList(),
+    'successSnapshot': successSnapshot,
+    'topPostPlaceholder': topPostPlaceholder,
+    'listeningQueries': listeningQueries
+        .map((entry) => entry.toJson())
+        .toList(),
+    'mentions': mentions.map((entry) => entry.toJson()).toList(),
+    'spikes': spikes.map((entry) => entry.toJson()).toList(),
+    'shareOfVoiceSnapshots': shareOfVoiceSnapshots
+        .map((entry) => entry.toJson())
+        .toList(),
+    'listeningAlertRules': listeningAlertRules
+        .map((entry) => entry.toJson())
+        .toList(),
+    'competitorWatch': competitorWatch.map((entry) => entry.toJson()).toList(),
+    'sentimentSummary': sentimentSummary.toJson(),
+    'exportArtifacts': exportArtifacts.map((entry) => entry.toJson()).toList(),
+    'activityEvents': activityEvents.map((entry) => entry.toJson()).toList(),
+  };
 
-  factory MetarixSnapshot.fromJson(Map<String, dynamic> json) => MetarixSnapshot(
-        workspace: Workspace.fromJson(
-          Map<String, dynamic>.from(json['workspace'] as Map),
-        ),
-        brand: Brand.fromJson(Map<String, dynamic>.from(json['brand'] as Map)),
-        currentUserId: json['currentUserId'] as String,
-        users: _mapList(json['users'], AppUser.fromJson),
-        memberships: _mapList(
-          json['memberships'],
-          WorkspaceMembership.fromJson,
-        ),
-        assetRecords: _mapList(
-          json['assetRecords'] ?? const <dynamic>[],
-          AssetRecord.fromJson,
-        ),
-        contentLibraryEntries: _mapList(
-          json['contentLibraryEntries'] ?? const <dynamic>[],
-          ContentLibraryEntry.fromJson,
-        ),
-        commentRecords: _mapList(
-          json['commentRecords'] ?? const <dynamic>[],
-          CommentRecord.fromJson,
-        ),
-        assignmentRecords: _mapList(
-          json['assignmentRecords'] ?? const <dynamic>[],
-          AssignmentRecord.fromJson,
-        ),
-        businessGoals: _mapList(json['businessGoals'], BusinessGoal.fromJson),
-        socialGoals: _mapList(json['socialGoals'], SocialGoal.fromJson),
-        personas: _mapList(json['personas'], AudiencePersona.fromJson),
-        competitors: _mapList(json['competitors'], Competitor.fromJson),
-        swotEntries: _mapList(json['swotEntries'], SwotEntry.fromJson),
-        auditFindings: _mapList(json['auditFindings'], AuditFinding.fromJson),
-        contentPillars: _mapList(
-          json['contentPillars'],
-          ContentPillar.fromJson,
-        ),
-        campaigns: _mapList(json['campaigns'], Campaign.fromJson),
-        evergreenItems: _mapList(
-          json['evergreenItems'],
-          EvergreenContentItem.fromJson,
-        ),
-        drafts: _mapList(json['drafts'], PostDraft.fromJson),
-        approvals: _mapList(json['approvals'], ApprovalRecord.fromJson),
-        schedules: _mapList(json['schedules'], ScheduleRecord.fromJson),
-        reportPeriods: _mapList(json['reportPeriods'], ReportPeriod.fromJson),
-        comparisonPeriods:
-            Map<String, String>.from(json['comparisonPeriods'] as Map),
-        normalizedMetrics: _mapList(
-          json['normalizedMetrics'] ?? const <dynamic>[],
-          NormalizedMetricRecord.fromJson,
-        ),
-        channelPerformance: _mapList(
-          json['channelPerformance'],
-          ChannelPerformanceRecord.fromJson,
-        ),
-        standoutResults: _mapList(
-          json['standoutResults'],
-          StandoutResult.fromJson,
-        ),
-        takeaways: _mapList(json['takeaways'], Takeaway.fromJson),
-        overallLearnings: _mapList(
-          json['overallLearnings'],
-          LearningEntry.fromJson,
-        ),
-        futureActions: _mapList(
-          json['futureActions'],
-          Recommendation.fromJson,
-        ),
-        recommendationInsights: _mapList(
-          json['recommendationInsights'] ?? const <dynamic>[],
-          RecommendationInsight.fromJson,
-        ),
-        successSnapshot: json['successSnapshot'] as String,
-        topPostPlaceholder: json['topPostPlaceholder'] as String,
-        listeningQueries: _mapList(
-          json['listeningQueries'],
-          ListeningQuery.fromJson,
-        ),
-        mentions: _mapList(json['mentions'], Mention.fromJson),
-        spikes: _mapList(json['spikes'], SpikeEvent.fromJson),
-        shareOfVoiceSnapshots: _mapList(
-          json['shareOfVoiceSnapshots'] ?? const <dynamic>[],
-          ShareOfVoiceSnapshot.fromJson,
-        ),
-        listeningAlertRules: _mapList(
-          json['listeningAlertRules'] ?? const <dynamic>[],
-          ListeningAlertRule.fromJson,
-        ),
-        competitorWatch: _mapList(
-          json['competitorWatch'],
-          CompetitorWatchEntry.fromJson,
-        ),
-        sentimentSummary: SentimentSummary.fromJson(
-          Map<String, dynamic>.from(json['sentimentSummary'] as Map),
-        ),
-        exportArtifacts: _mapList(
-          json['exportArtifacts'] ?? const <dynamic>[],
-          ExportArtifact.fromJson,
-        ),
-        activityEvents: _mapList(
-          json['activityEvents'] ?? const <dynamic>[],
-          ActivityEvent.fromJson,
-        ),
-      );
+  factory MetarixSnapshot.fromJson(Map<String, dynamic> json) {
+    final workspace = Workspace.fromJson(
+      Map<String, dynamic>.from(json['workspace'] as Map),
+    );
+    final brand = Brand.fromJson(
+      Map<String, dynamic>.from(json['brand'] as Map),
+    );
+    final users = _mapList(json['users'], AppUser.fromJson);
+    final memberships = _mapList(
+      json['memberships'],
+      WorkspaceMembership.fromJson,
+    );
+    final assetRecords = _mapList(
+      json['assetRecords'] ?? const <dynamic>[],
+      AssetRecord.fromJson,
+    );
+    final contentLibraryEntries = _mapList(
+      json['contentLibraryEntries'] ?? const <dynamic>[],
+      ContentLibraryEntry.fromJson,
+    );
+    final commentRecords = _mapList(
+      json['commentRecords'] ?? const <dynamic>[],
+      CommentRecord.fromJson,
+    );
+    final assignmentRecords = _mapList(
+      json['assignmentRecords'] ?? const <dynamic>[],
+      AssignmentRecord.fromJson,
+    );
+    final businessGoals = _mapList(
+      json['businessGoals'],
+      BusinessGoal.fromJson,
+    );
+    final socialGoals = _mapList(json['socialGoals'], SocialGoal.fromJson);
+    final personas = _mapList(json['personas'], AudiencePersona.fromJson);
+    final competitors = _mapList(json['competitors'], Competitor.fromJson);
+    final swotEntries = _mapList(json['swotEntries'], SwotEntry.fromJson);
+    final auditFindings = _mapList(
+      json['auditFindings'],
+      AuditFinding.fromJson,
+    );
+    final contentPillars = _mapList(
+      json['contentPillars'],
+      ContentPillar.fromJson,
+    );
+    final campaigns = _mapList(json['campaigns'], Campaign.fromJson);
+    final evergreenItems = _mapList(
+      json['evergreenItems'],
+      EvergreenContentItem.fromJson,
+    );
+    final drafts = _mapList(json['drafts'], PostDraft.fromJson);
+    final approvals = _mapList(json['approvals'], ApprovalRecord.fromJson);
+    final schedules = _mapList(json['schedules'], ScheduleRecord.fromJson);
+    final scheduledPosts = json['scheduledPosts'] == null
+        ? _deriveScheduledPosts(
+            campaigns: campaigns,
+            drafts: drafts,
+            schedules: schedules,
+          )
+        : _mapList(json['scheduledPosts'], ScheduledPostRecord.fromJson);
+    final conversationThreads = json['conversationThreads'] == null
+        ? const <ConversationThread>[]
+        : _mapList(json['conversationThreads'], ConversationThread.fromJson);
+    final conversationMessages = json['conversationMessages'] == null
+        ? const <ConversationMessage>[]
+        : _mapList(json['conversationMessages'], ConversationMessage.fromJson);
+
+    return MetarixSnapshot(
+      workspace: workspace,
+      brand: brand,
+      currentUserId: json['currentUserId'] as String,
+      users: users,
+      memberships: memberships,
+      assetRecords: assetRecords,
+      contentLibraryEntries: contentLibraryEntries,
+      commentRecords: commentRecords,
+      assignmentRecords: assignmentRecords,
+      businessGoals: businessGoals,
+      socialGoals: socialGoals,
+      personas: personas,
+      competitors: competitors,
+      swotEntries: swotEntries,
+      auditFindings: auditFindings,
+      contentPillars: contentPillars,
+      campaigns: campaigns,
+      evergreenItems: evergreenItems,
+      drafts: drafts,
+      approvals: approvals,
+      schedules: schedules,
+      scheduledPosts: scheduledPosts,
+      conversationThreads: conversationThreads,
+      conversationMessages: conversationMessages,
+      reportPeriods: _mapList(json['reportPeriods'], ReportPeriod.fromJson),
+      comparisonPeriods: Map<String, String>.from(
+        json['comparisonPeriods'] as Map,
+      ),
+      normalizedMetrics: _mapList(
+        json['normalizedMetrics'] ?? const <dynamic>[],
+        NormalizedMetricRecord.fromJson,
+      ),
+      channelPerformance: _mapList(
+        json['channelPerformance'],
+        ChannelPerformanceRecord.fromJson,
+      ),
+      standoutResults: _mapList(
+        json['standoutResults'],
+        StandoutResult.fromJson,
+      ),
+      takeaways: _mapList(json['takeaways'], Takeaway.fromJson),
+      overallLearnings: _mapList(
+        json['overallLearnings'],
+        LearningEntry.fromJson,
+      ),
+      futureActions: _mapList(json['futureActions'], Recommendation.fromJson),
+      recommendationInsights: _mapList(
+        json['recommendationInsights'] ?? const <dynamic>[],
+        RecommendationInsight.fromJson,
+      ),
+      successSnapshot: json['successSnapshot'] as String,
+      topPostPlaceholder: json['topPostPlaceholder'] as String,
+      listeningQueries: _mapList(
+        json['listeningQueries'],
+        ListeningQuery.fromJson,
+      ),
+      mentions: _mapList(json['mentions'], Mention.fromJson),
+      spikes: _mapList(json['spikes'], SpikeEvent.fromJson),
+      shareOfVoiceSnapshots: _mapList(
+        json['shareOfVoiceSnapshots'] ?? const <dynamic>[],
+        ShareOfVoiceSnapshot.fromJson,
+      ),
+      listeningAlertRules: _mapList(
+        json['listeningAlertRules'] ?? const <dynamic>[],
+        ListeningAlertRule.fromJson,
+      ),
+      competitorWatch: _mapList(
+        json['competitorWatch'],
+        CompetitorWatchEntry.fromJson,
+      ),
+      sentimentSummary: SentimentSummary.fromJson(
+        Map<String, dynamic>.from(json['sentimentSummary'] as Map),
+      ),
+      exportArtifacts: _mapList(
+        json['exportArtifacts'] ?? const <dynamic>[],
+        ExportArtifact.fromJson,
+      ),
+      activityEvents: _mapList(
+        json['activityEvents'] ?? const <dynamic>[],
+        ActivityEvent.fromJson,
+      ),
+    );
+  }
 
   static List<T> _mapList<T>(
     dynamic source,
@@ -362,5 +436,58 @@ class MetarixSnapshot {
     return (source as List<dynamic>)
         .map((entry) => mapper(Map<String, dynamic>.from(entry as Map)))
         .toList();
+  }
+
+  static List<ScheduledPostRecord> _deriveScheduledPosts({
+    required List<Campaign> campaigns,
+    required List<PostDraft> drafts,
+    required List<ScheduleRecord> schedules,
+  }) {
+    final campaignNames = {
+      for (final campaign in campaigns) campaign.id: campaign.name,
+    };
+
+    return drafts.map((draft) {
+      ScheduleRecord? schedule;
+      for (final entry in schedules) {
+        if (entry.draftId == draft.id) {
+          schedule = entry;
+          break;
+        }
+      }
+
+      final status = switch (draft.currentState) {
+        ContentState.published => PublishRecordStatus.published,
+        ContentState.publishDenied => PublishRecordStatus.blocked,
+        ContentState.scheduled
+            when schedule?.denialReasons.isNotEmpty ?? false =>
+          PublishRecordStatus.blocked,
+        ContentState.scheduled => PublishRecordStatus.scheduled,
+        _ => PublishRecordStatus.draft,
+      };
+
+      return ScheduledPostRecord(
+        id: 'publish-${draft.id}',
+        draftId: draft.id,
+        campaignId: draft.campaignId,
+        campaignName: campaignNames[draft.campaignId] ?? draft.campaignId,
+        title: draft.title,
+        channel: draft.targetNetwork,
+        status: status,
+        scheduledAt: schedule?.scheduledAt ?? draft.plannedPublishAt,
+        queuedAt: null,
+        publishedAt: status == PublishRecordStatus.published
+            ? draft.plannedPublishAt
+            : null,
+        updatedAt:
+            schedule?.scheduledAt ??
+            draft.plannedPublishAt ??
+            DateTime.fromMillisecondsSinceEpoch(0),
+        lastError: null,
+        denialReasons: status == PublishRecordStatus.blocked
+            ? schedule?.denialReasons ?? const []
+            : const [],
+      );
+    }).toList();
   }
 }

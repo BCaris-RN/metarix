@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/metarix_scope.dart';
 import '../../activity/object_activity_panel.dart';
 import '../../admin/domain/admin_models.dart';
+import '../../publish/domain/publish_models.dart';
 import '../../../runtime/activity/activity_event_type.dart';
 import '../../schedule/domain/schedule_models.dart';
 import '../../shared/domain/core_models.dart';
@@ -22,9 +23,10 @@ class _WorkflowScreenState extends State<WorkflowScreen> {
   Widget build(BuildContext context) {
     final services = MetarixScope.of(context);
     final controller = services.workflowController;
+    final publishController = services.publishController;
 
     return AnimatedBuilder(
-      animation: controller,
+      animation: Listenable.merge([controller, publishController]),
       builder: (context, _) {
         final drafts = controller.drafts;
         final selectedDraft = drafts.isEmpty
@@ -33,9 +35,16 @@ class _WorkflowScreenState extends State<WorkflowScreen> {
                 (draft) => draft.id == (_selectedDraftId ?? drafts.first.id),
                 orElse: () => drafts.first,
               );
-        final posture =
-            selectedDraft == null ? null : controller.postureFor(selectedDraft);
-        final evidenceRequirements = services.policies.evidenceFor('publish_eligibility');
+        final posture = selectedDraft == null
+            ? null
+            : controller.postureFor(selectedDraft);
+        final publishStatus = selectedDraft == null
+            ? PublishRecordStatus.draft
+            : publishController.recordForDraft(selectedDraft.id)?.status ??
+                  PublishRecordStatus.draft;
+        final evidenceRequirements = services.policies.evidenceFor(
+          'publish_eligibility',
+        );
 
         return ListView(
           padding: const EdgeInsets.all(24),
@@ -55,7 +64,10 @@ class _WorkflowScreenState extends State<WorkflowScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Draft queue', style: Theme.of(context).textTheme.titleLarge),
+                          Text(
+                            'Draft queue',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
                           const SizedBox(height: 12),
                           ...drafts.map(
                             (draft) => ListTile(
@@ -64,7 +76,8 @@ class _WorkflowScreenState extends State<WorkflowScreen> {
                               subtitle: Text(
                                 '${draft.targetNetwork.label} · ${draft.currentState.label}',
                               ),
-                              onTap: () => setState(() => _selectedDraftId = draft.id),
+                              onTap: () =>
+                                  setState(() => _selectedDraftId = draft.id),
                             ),
                           ),
                         ],
@@ -112,6 +125,11 @@ class _WorkflowScreenState extends State<WorkflowScreen> {
                                         'Publish posture: ${posture.posture.label}',
                                       ),
                                     ),
+                                    Chip(
+                                      label: Text(
+                                        'Publish state: ${publishStatus.label}',
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 12),
@@ -121,37 +139,43 @@ class _WorkflowScreenState extends State<WorkflowScreen> {
                                 const SizedBox(height: 12),
                                 Text(
                                   'Blocked actions',
-                                  style: Theme.of(context).textTheme.titleMedium,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium,
                                 ),
-                                ...RuntimeAction.values.map(
-                                  (action) {
-                                    final decision = controller.accessFor(
-                                      action,
-                                      draft: selectedDraft,
-                                    );
-                                    return ListTile(
-                                      dense: true,
-                                      title: Text(action.label),
-                                      subtitle: Text(decision.reason),
-                                      trailing: Icon(
-                                        decision.allowed
-                                            ? Icons.check_circle_outline
-                                            : Icons.block_outlined,
-                                      ),
-                                    );
-                                  },
-                                ),
+                                ...RuntimeAction.values.map((action) {
+                                  final decision = controller.accessFor(
+                                    action,
+                                    draft: selectedDraft,
+                                  );
+                                  return ListTile(
+                                    dense: true,
+                                    title: Text(action.label),
+                                    subtitle: Text(decision.reason),
+                                    trailing: Icon(
+                                      decision.allowed
+                                          ? Icons.check_circle_outline
+                                          : Icons.block_outlined,
+                                    ),
+                                  );
+                                }),
                                 const Divider(),
                                 Text(
                                   'Evidence checklist',
-                                  style: Theme.of(context).textTheme.titleMedium,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium,
                                 ),
                                 ...evidenceRequirements.map(
                                   (code) => CheckboxListTile(
                                     dense: true,
-                                    value: selectedDraft.evidenceCodes.contains(code),
-                                    onChanged: (_) =>
-                                        controller.toggleEvidence(selectedDraft, code),
+                                    value: selectedDraft.evidenceCodes.contains(
+                                      code,
+                                    ),
+                                    onChanged: (_) => controller.toggleEvidence(
+                                      selectedDraft,
+                                      code,
+                                    ),
                                     title: Text(code),
                                   ),
                                 ),
@@ -159,12 +183,16 @@ class _WorkflowScreenState extends State<WorkflowScreen> {
                                 if (posture.denialReasons.isNotEmpty) ...[
                                   Text(
                                     'Denial reasons',
-                                    style: Theme.of(context).textTheme.titleMedium,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleMedium,
                                   ),
                                   ...posture.denialReasons.map(
                                     (reason) => ListTile(
                                       dense: true,
-                                      leading: const Icon(Icons.warning_amber_outlined),
+                                      leading: const Icon(
+                                        Icons.warning_amber_outlined,
+                                      ),
                                       title: Text(reason.code),
                                       subtitle: Text(reason.message),
                                     ),
@@ -176,23 +204,28 @@ class _WorkflowScreenState extends State<WorkflowScreen> {
                                   runSpacing: 8,
                                   children: [
                                     FilledButton(
-                                      onPressed: () =>
-                                          controller.requestReview(selectedDraft),
+                                      onPressed: () => controller.requestReview(
+                                        selectedDraft,
+                                      ),
                                       child: const Text('Request Review'),
                                     ),
                                     OutlinedButton(
-                                      onPressed: () =>
-                                          controller.requestChanges(selectedDraft),
+                                      onPressed: () => controller
+                                          .requestChanges(selectedDraft),
                                       child: const Text('Request Changes'),
                                     ),
                                     FilledButton.tonal(
-                                      onPressed: () => controller.approveDraft(selectedDraft),
+                                      onPressed: () => controller.approveDraft(
+                                        selectedDraft,
+                                      ),
                                       child: const Text('Approve'),
                                     ),
                                     FilledButton.tonal(
                                       onPressed: () => controller.scheduleDraft(
                                         selectedDraft,
-                                        DateTime.now().add(const Duration(days: 1)),
+                                        DateTime.now().add(
+                                          const Duration(days: 1),
+                                        ),
                                       ),
                                       child: const Text('Schedule'),
                                     ),
@@ -203,7 +236,8 @@ class _WorkflowScreenState extends State<WorkflowScreen> {
                                   title: 'Draft timeline',
                                   objectType: ActivityObjectType.draft,
                                   objectId: selectedDraft.id,
-                                  emptyState: 'No activity recorded for this draft yet.',
+                                  emptyState:
+                                      'No activity recorded for this draft yet.',
                                 ),
                               ],
                             ),

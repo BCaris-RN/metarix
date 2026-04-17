@@ -7,6 +7,7 @@ import '../features/listening/domain/listening_models.dart';
 import '../features/listening/domain/listening_alert_rule.dart';
 import '../features/listening/domain/share_of_voice_snapshot.dart';
 import '../features/planning/domain/planning_models.dart';
+import '../features/publish/domain/publish_models.dart';
 import '../features/recommendations/domain/recommendation_model.dart';
 import '../features/reports/domain/metric_family.dart';
 import '../features/reports/domain/normalized_metric_record.dart';
@@ -15,6 +16,8 @@ import '../features/schedule/domain/schedule_models.dart';
 import '../features/shared/domain/core_models.dart';
 import '../features/strategy/domain/strategy_models.dart';
 import '../features/workflow/domain/workflow_models.dart';
+import '../metarix_core/models/connector_models.dart';
+import '../metarix_core/models/model_types.dart';
 import '../runtime/activity/activity_event.dart';
 import '../runtime/activity/activity_event_type.dart';
 import 'metarix_snapshot.dart';
@@ -273,7 +276,10 @@ class SampleDataPack {
           summary: 'Evaluates product reliability and margin fit.',
           preferredNetworks: [SocialChannel.linkedin, SocialChannel.instagram],
           goals: ['Find launch-ready stories', 'See proof of retail demand'],
-          painPoints: ['Thin differentiation', 'Low confidence in sell-through'],
+          painPoints: [
+            'Thin differentiation',
+            'Low confidence in sell-through',
+          ],
         ),
         AudiencePersona(
           id: 'persona-coach',
@@ -282,7 +288,10 @@ class SampleDataPack {
           role: 'Community advocate',
           summary: 'Shares training tips and gear recommendations.',
           preferredNetworks: [SocialChannel.instagram, SocialChannel.youtube],
-          goals: ['Find credible training content', 'Spot useful product claims'],
+          goals: [
+            'Find credible training content',
+            'Spot useful product claims',
+          ],
           painPoints: ['Overly polished ads', 'Weak product education'],
         ),
       ],
@@ -329,7 +338,8 @@ class SampleDataPack {
           brandId: brandId,
           title: 'LinkedIn proof points underused',
           observation: 'Retail case studies are buried in PDF links.',
-          impact: 'Decision-makers are not seeing margin and sell-through data.',
+          impact:
+              'Decision-makers are not seeing margin and sell-through data.',
         ),
       ],
       contentPillars: const [
@@ -372,10 +382,7 @@ class SampleDataPack {
           summary: 'Always-on training and product education stream.',
           startDate: DateTime(2026, 4, 1),
           endDate: DateTime(2026, 6, 30),
-          channels: const [
-            SocialChannel.instagram,
-            SocialChannel.youtube,
-          ],
+          channels: const [SocialChannel.instagram, SocialChannel.youtube],
           contentPillarId: 'pillar-education',
         ),
       ],
@@ -479,6 +486,138 @@ class SampleDataPack {
           channel: SocialChannel.linkedin,
           scheduledAt: DateTime(2026, 4, 16, 10),
           denialReasons: const [],
+        ),
+      ],
+      scheduledPosts: [
+        ScheduledPostRecord(
+          id: 'publish-draft-launch-proof',
+          draftId: 'draft-launch-proof',
+          campaignId: 'campaign-spring',
+          campaignName: 'Spring trail launch',
+          title: 'Buyer proof carousel',
+          channel: SocialChannel.linkedin,
+          status: PublishRecordStatus.scheduled,
+          scheduledAt: DateTime(2026, 4, 16, 10),
+          queuedAt: null,
+          publishedAt: null,
+          updatedAt: DateTime(2026, 4, 15, 14, 5),
+          lastError: null,
+          denialReasons: const [],
+        ),
+        ScheduledPostRecord(
+          id: 'publish-draft-trail-tip',
+          draftId: 'draft-trail-tip',
+          campaignId: 'campaign-evergreen',
+          campaignName: 'Evergreen gear education',
+          title: 'Trail tip reel',
+          channel: SocialChannel.instagram,
+          status: PublishRecordStatus.draft,
+          scheduledAt: DateTime(2026, 4, 18, 9),
+          queuedAt: null,
+          publishedAt: null,
+          updatedAt: DateTime(2026, 4, 14, 10),
+          lastError: null,
+          denialReasons: const [],
+        ),
+        ScheduledPostRecord(
+          id: 'publish-draft-community-post',
+          draftId: 'draft-community-post',
+          campaignId: 'campaign-evergreen',
+          campaignName: 'Evergreen gear education',
+          title: 'Community photo round-up',
+          channel: SocialChannel.facebook,
+          status: PublishRecordStatus.draft,
+          scheduledAt: null,
+          queuedAt: null,
+          publishedAt: null,
+          updatedAt: DateTime(2026, 4, 14, 9),
+          lastError: null,
+          denialReasons: const [],
+        ),
+      ],
+      conversationThreads: [
+        ConversationThread(
+          threadId: 'thread-linkedin-retail-buyer',
+          platform: SocialPlatform.linkedin,
+          accountId: 'account-linkedin-main',
+          remoteThreadId: 'remote-linkedin-retail-buyer',
+          title: 'Retail buyer launch question',
+          participantHandles: const ['@retail_buyer_riley'],
+          status: ConversationStatus.unread,
+          assignedToUserId: null,
+          lastMessageAt: DateTime(2026, 4, 15, 16, 20),
+          unreadCount: 1,
+        ),
+        ConversationThread(
+          threadId: 'thread-instagram-fit-guide',
+          platform: SocialPlatform.instagram,
+          accountId: 'account-instagram-main',
+          remoteThreadId: 'remote-instagram-fit-guide',
+          title: 'Fit guide follow-up',
+          participantHandles: const ['@trailwithcam'],
+          status: ConversationStatus.assigned,
+          assignedToUserId: 'user-lena',
+          lastMessageAt: DateTime(2026, 4, 15, 12, 30),
+          unreadCount: 0,
+        ),
+        ConversationThread(
+          threadId: 'thread-facebook-restock',
+          platform: SocialPlatform.facebook,
+          accountId: 'account-facebook-main',
+          remoteThreadId: 'remote-facebook-restock',
+          title: 'Restock confirmation',
+          participantHandles: const ['@campfireco-op'],
+          status: ConversationStatus.resolved,
+          assignedToUserId: 'user-isaac',
+          lastMessageAt: DateTime(2026, 4, 14, 18),
+          unreadCount: 0,
+        ),
+      ],
+      conversationMessages: [
+        ConversationMessage(
+          messageId: 'message-linkedin-1',
+          threadId: 'thread-linkedin-retail-buyer',
+          platform: SocialPlatform.linkedin,
+          authorHandle: '@retail_buyer_riley',
+          body: 'Do you have margin proof ready for next week?',
+          isOutbound: false,
+          sentAt: DateTime(2026, 4, 15, 16, 20),
+        ),
+        ConversationMessage(
+          messageId: 'message-instagram-1',
+          threadId: 'thread-instagram-fit-guide',
+          platform: SocialPlatform.instagram,
+          authorHandle: '@trailwithcam',
+          body: 'Can you send the fit guide link again?',
+          isOutbound: false,
+          sentAt: DateTime(2026, 4, 15, 12, 10),
+        ),
+        ConversationMessage(
+          messageId: 'message-instagram-2',
+          threadId: 'thread-instagram-fit-guide',
+          platform: SocialPlatform.instagram,
+          authorHandle: '@metarix_lena',
+          body: 'Absolutely. I just sent the latest fit checklist in DM.',
+          isOutbound: true,
+          sentAt: DateTime(2026, 4, 15, 12, 30),
+        ),
+        ConversationMessage(
+          messageId: 'message-facebook-1',
+          threadId: 'thread-facebook-restock',
+          platform: SocialPlatform.facebook,
+          authorHandle: '@campfireco-op',
+          body: 'Thanks. We just needed the restock window confirmed.',
+          isOutbound: false,
+          sentAt: DateTime(2026, 4, 14, 17, 45),
+        ),
+        ConversationMessage(
+          messageId: 'message-facebook-2',
+          threadId: 'thread-facebook-restock',
+          platform: SocialPlatform.facebook,
+          authorHandle: '@metarix_isaac',
+          body: 'Confirmed. The next shipment window opens on Monday morning.',
+          isOutbound: true,
+          sentAt: DateTime(2026, 4, 14, 18),
         ),
       ],
       reportPeriods: [
@@ -688,7 +827,8 @@ class SampleDataPack {
           id: 'standout-proof',
           reportPeriodId: 'period-april',
           headline: 'Retail proof posts drove the highest-quality clicks.',
-          detail: 'LinkedIn proof carousels outperformed brand-story posts by 34%.',
+          detail:
+              'LinkedIn proof carousels outperformed brand-story posts by 34%.',
         ),
       ],
       takeaways: const [
@@ -696,10 +836,13 @@ class SampleDataPack {
           id: 'takeaway-1',
           reportPeriodId: 'period-april',
           title: 'Proof outperformed inspiration',
-          whatHappened: 'Retail proof posts generated stronger CTR than inspiration posts.',
-          whyItHappened: 'The audience responded to hard margin and sell-through signals.',
+          whatHappened:
+              'Retail proof posts generated stronger CTR than inspiration posts.',
+          whyItHappened:
+              'The audience responded to hard margin and sell-through signals.',
           howWeKnow: 'CTR and session depth were highest on proof-led posts.',
-          whatWeLearned: 'Buyers need explicit commercial evidence earlier in the funnel.',
+          whatWeLearned:
+              'Buyers need explicit commercial evidence earlier in the funnel.',
         ),
       ],
       overallLearnings: const [
@@ -726,7 +869,8 @@ class SampleDataPack {
           reportPeriodId: 'period-april',
           type: RecommendationType.cadenceAdjustment,
           title: 'Favor LinkedIn morning proof slots',
-          rationale: 'LinkedIn shows the strongest engagement-to-reach ratio in April.',
+          rationale:
+              'LinkedIn shows the strongest engagement-to-reach ratio in April.',
           sourceReferences: ['metric-linkedin-april', 'draft-launch-proof'],
           assignedTo: 'Strategy team',
         ),
@@ -759,7 +903,8 @@ class SampleDataPack {
           id: 'mention-1',
           queryId: 'query-competitor',
           source: 'Forum thread',
-          excerpt: 'Retail buyers are asking why Ridge Atlas backorders keep slipping.',
+          excerpt:
+              'Retail buyers are asking why Ridge Atlas backorders keep slipping.',
           sentimentLabel: 'negative',
           spikeDetected: true,
           recommendedAction: InsightAction.opportunity,
@@ -869,7 +1014,8 @@ class SampleDataPack {
           eventClass: ActivityEventClass.normalAction,
           actorUserId: 'user-priya',
           actorName: 'Priya Shah',
-          reason: 'Marketing lead approval satisfied for partner-facing content.',
+          reason:
+              'Marketing lead approval satisfied for partner-facing content.',
           occurredAt: DateTime(2026, 4, 15, 14),
         ),
         ActivityEvent(
@@ -908,7 +1054,8 @@ class SampleDataPack {
           eventClass: ActivityEventClass.systemAction,
           actorUserId: 'user-devon',
           actorName: 'Devon Ames',
-          reason: 'Competitor friction spike routed into the opportunity queue.',
+          reason:
+              'Competitor friction spike routed into the opportunity queue.',
           occurredAt: DateTime(2026, 4, 13, 12, 5),
         ),
       ],

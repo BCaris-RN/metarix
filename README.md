@@ -52,6 +52,14 @@ Keep this repository public-safe.
 
 Local-only proprietary folders such as `caris/` and `phoenix/` are intentionally out of Git scope unless explicitly approved.
 
+## Public Repo Safety
+
+MetaRix is intended to remain a self-hostable public repo. Public code, docs, assets, and fixtures should be independently authored for MetaRix and safe to publish.
+
+Local runtime state stays separate from the public repo. Secrets, tokens, personal data, local exports, watched folders, reports with real metrics, and other machine-specific runtime material belong in local-only storage.
+
+The repo also includes a non-leak scan for provenance safety. Run `python .\scripts\scan_non_leak.py` or `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_repo_safety_checks.ps1` before shipping changes to catch forbidden proprietary names, copied path signatures, and semantic bundle markers early.
+
 ## What lives here
 
 - Product-facing documentation
@@ -101,6 +109,8 @@ flutter build web --release
 
 The default runtime boots in demo mode with public-safe sample data and local persistence. Refreshing the browser keeps the current demo state until the user presses the in-app `Reset Demo` action.
 
+For a newcomer-friendly path from clone to local run, start with [docs/self_host_quickstart.md](docs/self_host_quickstart.md).
+
 ## Screenshots
 
 ![MetaRix desktop demo](docs/assets/metarix-home.png)
@@ -121,6 +131,19 @@ flutter run -d chrome `
 ```
 
 Do not commit real keys, tokens, or workspace-specific connection details.
+
+## Public Repo Safety
+
+MetaRix is meant to stay public-safe, self-hostable, and reproducible.
+
+The public repo contains the app, docs, fixtures, and demo content needed to run without real accounts. Local connected runtime data stays on your machine, including `.env`, export folders, watched paths, and live account tokens.
+
+Use the non-leak scanner before publishing changes:
+
+```powershell
+python .\scripts\scan_non_leak.py
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_repo_safety_checks.ps1
+```
 
 ## Known limitations
 
