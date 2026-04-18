@@ -111,10 +111,7 @@ The default runtime boots in demo mode with public-safe sample data and local pe
 
 For a newcomer-friendly path from clone to local run, start with [docs/self_host_quickstart.md](docs/self_host_quickstart.md).
 
-## Screenshots
 
-![MetaRix desktop demo](docs/assets/metarix-home.png)
-![MetaRix mobile demo](docs/assets/metarix-mobile.png)
 
 ## Optional backend path
 
