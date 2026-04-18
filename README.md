@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/MetaRix_Internally_Flawless/metarix-readme-top.png" alt="MetaRix wordmark" width="720" />
+  <img src="assets/MetaRix_Internally_Flawless/metarix-readme-top-v2.png" alt="MetaRix wordmark" width="720" />
 </p>
 
 # MetaRix
