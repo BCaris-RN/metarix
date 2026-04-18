@@ -32,6 +32,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
       builder: (context, _) {
         final snapshot = controller.snapshot;
         final activePeriodId = _selectedPeriodId ?? snapshot.activePeriodId;
+        final signalSummary = snapshot.signalSummaryFor(activePeriodId);
+        final engagement = signalSummary.engagement;
+        final leadingContent = signalSummary.topContentUnits.isEmpty
+            ? null
+            : signalSummary.topContentUnits.first;
         final activePeriod = snapshot.reportPeriods.firstWhere(
           (period) => period.id == activePeriodId,
         );
@@ -98,16 +103,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
               runSpacing: 12,
               children: [
                 _MetricCard(
-                  title: 'Success snapshot',
-                  value: snapshot.successSnapshot,
+                  title: 'Engagement summary',
+                  value: engagement == null
+                      ? 'No engagement signal available'
+                      : '${engagement.totalEngagements} engagements across ${engagement.topChannelLabel}',
                 ),
                 _MetricCard(
                   title: 'Comparison range',
-                  value: comparisonPeriod.label,
+                  value: engagement == null
+                      ? comparisonPeriod.label
+                      : '${engagement.comparisonLabel} (${engagement.comparisonDelta >= 0 ? '+' : ''}${engagement.comparisonDelta})',
                 ),
                 _MetricCard(
-                  title: 'Top post',
-                  value: snapshot.topPostPlaceholder,
+                  title: 'Top content unit',
+                  value: leadingContent == null
+                      ? 'No linked content unit'
+                      : '${leadingContent.title} (${leadingContent.channelLabel})',
+                ),
+                _MetricCard(
+                  title: 'Sentiment bucket',
+                  value: signalSummary.sentimentBucket == null
+                      ? 'No sentiment bucket'
+                      : '${signalSummary.sentimentBucket!.label} (${signalSummary.sentimentBucket!.count})',
                 ),
               ],
             ),

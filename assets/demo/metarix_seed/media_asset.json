@@ -1,0 +1,12 @@
+{
+  "assetId": "asset_reel_launch_01",
+  "sourceType": "canva",
+  "originalPath": "local_media/demo/launch/reel-launch-01.mp4",
+  "previewPath": "local_media/demo/previews/reel-launch-01.jpg",
+  "mimeType": "video/mp4",
+  "width": 1080,
+  "height": 1920,
+  "durationMs": 18200,
+  "tags": ["launch", "reel", "spring"],
+  "importedAt": "2026-04-12T10:15:00.000Z"
+}

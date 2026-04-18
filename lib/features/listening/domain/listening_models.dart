@@ -1,46 +1,34 @@
 import 'listening_alert_rule.dart';
 import 'listening_result_group.dart';
 import 'share_of_voice_snapshot.dart';
+import '../../shared/domain/signal_summary.dart';
 
-enum QueryFamily {
-  brand,
-  campaign,
-  competitor,
-  industry,
-  influencer,
-  crisis,
-}
+enum QueryFamily { brand, campaign, competitor, industry, influencer, crisis }
 
 extension QueryFamilyX on QueryFamily {
   String get label => switch (this) {
-        QueryFamily.brand => 'Brand',
-        QueryFamily.campaign => 'Campaign',
-        QueryFamily.competitor => 'Competitor',
-        QueryFamily.industry => 'Industry',
-        QueryFamily.influencer => 'Influencer',
-        QueryFamily.crisis => 'Crisis',
-      };
+    QueryFamily.brand => 'Brand',
+    QueryFamily.campaign => 'Campaign',
+    QueryFamily.competitor => 'Competitor',
+    QueryFamily.industry => 'Industry',
+    QueryFamily.influencer => 'Influencer',
+    QueryFamily.crisis => 'Crisis',
+  };
 
   static QueryFamily fromName(String value) =>
       QueryFamily.values.firstWhere((family) => family.name == value);
 }
 
-enum InsightAction {
-  observe,
-  replyLater,
-  escalate,
-  report,
-  opportunity,
-}
+enum InsightAction { observe, replyLater, escalate, report, opportunity }
 
 extension InsightActionX on InsightAction {
   String get label => switch (this) {
-        InsightAction.observe => 'Observe',
-        InsightAction.replyLater => 'Reply later',
-        InsightAction.escalate => 'Escalate',
-        InsightAction.report => 'Report',
-        InsightAction.opportunity => 'Opportunity',
-      };
+    InsightAction.observe => 'Observe',
+    InsightAction.replyLater => 'Reply later',
+    InsightAction.escalate => 'Escalate',
+    InsightAction.report => 'Report',
+    InsightAction.opportunity => 'Opportunity',
+  };
 
   static InsightAction fromName(String value) =>
       InsightAction.values.firstWhere((action) => action.name == value);
@@ -86,25 +74,26 @@ class ListeningQuery {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'brandId': brandId,
-        'name': name,
-        'queryFamily': queryFamily.name,
-        'queryText': queryText,
-        'tags': tags,
-        'targetCompetitors': targetCompetitors,
-      };
+    'id': id,
+    'brandId': brandId,
+    'name': name,
+    'queryFamily': queryFamily.name,
+    'queryText': queryText,
+    'tags': tags,
+    'targetCompetitors': targetCompetitors,
+  };
 
   factory ListeningQuery.fromJson(Map<String, dynamic> json) => ListeningQuery(
-        id: json['id'] as String,
-        brandId: (json['brandId'] as String?) ?? '',
-        name: json['name'] as String,
-        queryFamily: QueryFamilyX.fromName(json['queryFamily'] as String),
-        queryText: json['queryText'] as String,
-        tags: (json['tags'] as List<dynamic>).cast<String>().toList(),
-        targetCompetitors:
-            (json['targetCompetitors'] as List<dynamic>).cast<String>().toList(),
-      );
+    id: json['id'] as String,
+    brandId: (json['brandId'] as String?) ?? '',
+    name: json['name'] as String,
+    queryFamily: QueryFamilyX.fromName(json['queryFamily'] as String),
+    queryText: json['queryText'] as String,
+    tags: (json['tags'] as List<dynamic>).cast<String>().toList(),
+    targetCompetitors: (json['targetCompetitors'] as List<dynamic>)
+        .cast<String>()
+        .toList(),
+  );
 }
 
 class Mention {
@@ -151,28 +140,28 @@ class Mention {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'queryId': queryId,
-        'source': source,
-        'excerpt': excerpt,
-        'sentimentLabel': sentimentLabel,
-        'spikeDetected': spikeDetected,
-        'recommendedAction': recommendedAction.name,
-        'occurredAt': occurredAt.toIso8601String(),
-      };
+    'id': id,
+    'queryId': queryId,
+    'source': source,
+    'excerpt': excerpt,
+    'sentimentLabel': sentimentLabel,
+    'spikeDetected': spikeDetected,
+    'recommendedAction': recommendedAction.name,
+    'occurredAt': occurredAt.toIso8601String(),
+  };
 
   factory Mention.fromJson(Map<String, dynamic> json) => Mention(
-        id: json['id'] as String,
-        queryId: json['queryId'] as String,
-        source: json['source'] as String,
-        excerpt: json['excerpt'] as String,
-        sentimentLabel: json['sentimentLabel'] as String,
-        spikeDetected: json['spikeDetected'] as bool,
-        recommendedAction: InsightActionX.fromName(
-          json['recommendedAction'] as String,
-        ),
-        occurredAt: DateTime.parse(json['occurredAt'] as String),
-      );
+    id: json['id'] as String,
+    queryId: json['queryId'] as String,
+    source: json['source'] as String,
+    excerpt: json['excerpt'] as String,
+    sentimentLabel: json['sentimentLabel'] as String,
+    spikeDetected: json['spikeDetected'] as bool,
+    recommendedAction: InsightActionX.fromName(
+      json['recommendedAction'] as String,
+    ),
+    occurredAt: DateTime.parse(json['occurredAt'] as String),
+  );
 }
 
 class SpikeEvent {
@@ -195,26 +184,26 @@ class SpikeEvent {
   final DateTime detectedAt;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'queryId': queryId,
-        'headline': headline,
-        'mentionCount': mentionCount,
-        'sentimentLabel': sentimentLabel,
-        'recommendedAction': recommendedAction.name,
-        'detectedAt': detectedAt.toIso8601String(),
-      };
+    'id': id,
+    'queryId': queryId,
+    'headline': headline,
+    'mentionCount': mentionCount,
+    'sentimentLabel': sentimentLabel,
+    'recommendedAction': recommendedAction.name,
+    'detectedAt': detectedAt.toIso8601String(),
+  };
 
   factory SpikeEvent.fromJson(Map<String, dynamic> json) => SpikeEvent(
-        id: json['id'] as String,
-        queryId: json['queryId'] as String,
-        headline: json['headline'] as String,
-        mentionCount: json['mentionCount'] as int,
-        sentimentLabel: json['sentimentLabel'] as String,
-        recommendedAction: InsightActionX.fromName(
-          json['recommendedAction'] as String,
-        ),
-        detectedAt: DateTime.parse(json['detectedAt'] as String),
-      );
+    id: json['id'] as String,
+    queryId: json['queryId'] as String,
+    headline: json['headline'] as String,
+    mentionCount: json['mentionCount'] as int,
+    sentimentLabel: json['sentimentLabel'] as String,
+    recommendedAction: InsightActionX.fromName(
+      json['recommendedAction'] as String,
+    ),
+    detectedAt: DateTime.parse(json['detectedAt'] as String),
+  );
 }
 
 class CompetitorWatchEntry {
@@ -233,12 +222,12 @@ class CompetitorWatchEntry {
   final InsightAction recommendedAction;
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'competitorName': competitorName,
-        'shareOfVoice': shareOfVoice,
-        'sentimentLabel': sentimentLabel,
-        'recommendedAction': recommendedAction.name,
-      };
+    'id': id,
+    'competitorName': competitorName,
+    'shareOfVoice': shareOfVoice,
+    'sentimentLabel': sentimentLabel,
+    'recommendedAction': recommendedAction.name,
+  };
 
   factory CompetitorWatchEntry.fromJson(Map<String, dynamic> json) =>
       CompetitorWatchEntry(
@@ -264,10 +253,10 @@ class SentimentSummary {
   final int negative;
 
   Map<String, dynamic> toJson() => {
-        'positive': positive,
-        'mixed': mixed,
-        'negative': negative,
-      };
+    'positive': positive,
+    'mixed': mixed,
+    'negative': negative,
+  };
 
   factory SentimentSummary.fromJson(Map<String, dynamic> json) =>
       SentimentSummary(
@@ -287,6 +276,8 @@ class ListeningSnapshot {
     required this.alertRules,
     required this.competitorWatch,
     required this.sentimentSummary,
+    required this.workspaceSignalSummary,
+    required this.querySignalSummaries,
   });
 
   final List<ListeningQuery> queries;
@@ -297,4 +288,13 @@ class ListeningSnapshot {
   final List<ListeningAlertRule> alertRules;
   final List<CompetitorWatchEntry> competitorWatch;
   final SentimentSummary sentimentSummary;
+  final SignalSummary workspaceSignalSummary;
+  final Map<String, SignalSummary> querySignalSummaries;
+
+  SignalSummary signalSummaryFor(String? queryId) {
+    if (queryId == null) {
+      return workspaceSignalSummary;
+    }
+    return querySignalSummaries[queryId] ?? workspaceSignalSummary;
+  }
 }

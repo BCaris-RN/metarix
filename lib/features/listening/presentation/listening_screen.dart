@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/metarix_scope.dart';
+import '../../../runtime/activity/activity_event_type.dart';
 import '../../activity/object_activity_panel.dart';
 import '../../admin/domain/admin_models.dart';
-import '../../../runtime/activity/activity_event_type.dart';
 import '../application/listening_controller.dart';
 import '../domain/listening_models.dart';
 
@@ -33,15 +33,22 @@ class _ListeningScreenState extends State<ListeningScreen> {
         final selectedQuery = snapshot.queries.isEmpty
             ? null
             : snapshot.queries.firstWhere(
-                (query) => query.id == (_selectedQueryId ?? snapshot.queries.first.id),
+                (query) =>
+                    query.id == (_selectedQueryId ?? snapshot.queries.first.id),
                 orElse: () => snapshot.queries.first,
               );
+        final signalSummary = snapshot.signalSummaryFor(selectedQuery?.id);
+        final watchSummary = signalSummary.mentionWatch;
         final queryMentions = selectedQuery == null
             ? snapshot.mentions
-            : snapshot.mentions.where((entry) => entry.queryId == selectedQuery.id).toList();
+            : snapshot.mentions
+                  .where((entry) => entry.queryId == selectedQuery.id)
+                  .toList();
         final querySpikes = selectedQuery == null
             ? snapshot.spikes
-            : snapshot.spikes.where((entry) => entry.queryId == selectedQuery.id).toList();
+            : snapshot.spikes
+                  .where((entry) => entry.queryId == selectedQuery.id)
+                  .toList();
 
         return ListView(
           padding: const EdgeInsets.all(24),
@@ -51,6 +58,37 @@ class _ListeningScreenState extends State<ListeningScreen> {
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 20),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _SummaryCard(
+                  title: 'Mention watch',
+                  value: watchSummary == null
+                      ? 'No watch summary'
+                      : '${watchSummary.mentionCount} mentions / ${watchSummary.spikeCount} spikes',
+                ),
+                _SummaryCard(
+                  title: 'Action queue',
+                  value: watchSummary == null
+                      ? 'No actions queued'
+                      : '${watchSummary.actionQueueCount} items',
+                ),
+                _SummaryCard(
+                  title: 'Top watch',
+                  value: watchSummary == null
+                      ? 'No active watch signal'
+                      : watchSummary.topWatchLabel,
+                ),
+                _SummaryCard(
+                  title: 'Sentiment bucket',
+                  value: signalSummary.sentimentBucket == null
+                      ? 'No sentiment bucket'
+                      : '${signalSummary.sentimentBucket!.label} (${signalSummary.sentimentBucket!.count})',
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -70,11 +108,16 @@ class _ListeningScreenState extends State<ListeningScreen> {
                                 '${query.queryFamily.label}\n${query.queryText}',
                               ),
                               isThreeLine: true,
-                              onTap: () => setState(() => _selectedQueryId = query.id),
+                              onTap: () =>
+                                  setState(() => _selectedQueryId = query.id),
                               trailing: IconButton(
                                 icon: const Icon(Icons.edit_outlined),
                                 onPressed: canManage.allowed
-                                    ? () => _showQueryDialog(context, controller, query)
+                                    ? () => _showQueryDialog(
+                                        context,
+                                        controller,
+                                        query,
+                                      )
                                     : null,
                               ),
                             ),
@@ -115,7 +158,10 @@ class _ListeningScreenState extends State<ListeningScreen> {
                                     onChanged: canManage.allowed
                                         ? (value) {
                                             if (value != null) {
-                                              controller.routeMention(mention, value);
+                                              controller.routeMention(
+                                                mention,
+                                                value,
+                                              );
                                             }
                                           }
                                         : null,
@@ -141,7 +187,7 @@ class _ListeningScreenState extends State<ListeningScreen> {
                                       (spike) => ListTile(
                                         title: Text(spike.headline),
                                         subtitle: Text(
-                                          '${spike.mentionCount} mentions · ${spike.sentimentLabel}',
+                                          '${spike.mentionCount} mentions - ${spike.sentimentLabel}',
                                         ),
                                       ),
                                     )
@@ -159,9 +205,19 @@ class _ListeningScreenState extends State<ListeningScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Positive: ${snapshot.sentimentSummary.positive}'),
-                                  Text('Mixed: ${snapshot.sentimentSummary.mixed}'),
-                                  Text('Negative: ${snapshot.sentimentSummary.negative}'),
+                                  Text(
+                                    'Positive: ${snapshot.sentimentSummary.positive}',
+                                  ),
+                                  Text(
+                                    'Mixed: ${snapshot.sentimentSummary.mixed}',
+                                  ),
+                                  Text(
+                                    'Negative: ${snapshot.sentimentSummary.negative}',
+                                  ),
+                                  if (signalSummary.sentimentBucket != null)
+                                    Text(
+                                      'Dominant bucket: ${signalSummary.sentimentBucket!.label}',
+                                    ),
                                 ],
                               ),
                             ),
@@ -189,7 +245,7 @@ class _ListeningScreenState extends State<ListeningScreen> {
                             (entry) => ListTile(
                               title: Text(entry.competitorName),
                               subtitle: Text(
-                                'Share of voice: ${(entry.shareOfVoice * 100).toStringAsFixed(0)}% · ${entry.sentimentLabel}',
+                                'Share of voice: ${(entry.shareOfVoice * 100).toStringAsFixed(0)}% - ${entry.sentimentLabel}',
                               ),
                               trailing: Text(entry.recommendedAction.label),
                             ),
@@ -207,7 +263,11 @@ class _ListeningScreenState extends State<ListeningScreen> {
                     onAction: null,
                     child: Column(
                       children: snapshot.mentions
-                          .where((mention) => mention.recommendedAction != InsightAction.observe)
+                          .where(
+                            (mention) =>
+                                mention.recommendedAction !=
+                                InsightAction.observe,
+                          )
                           .map(
                             (mention) => ListTile(
                               title: Text(mention.recommendedAction.label),
@@ -226,7 +286,8 @@ class _ListeningScreenState extends State<ListeningScreen> {
                 title: 'Listening timeline',
                 objectType: ActivityObjectType.listeningQuery,
                 objectId: selectedQuery.id,
-                emptyState: 'No activity recorded for this listening query yet.',
+                emptyState:
+                    'No activity recorded for this listening query yet.',
               ),
             ],
             if (!canManage.allowed) ...[
@@ -251,8 +312,9 @@ class _ListeningScreenState extends State<ListeningScreen> {
   ) async {
     final services = MetarixScope.of(context);
     final nameController = TextEditingController(text: existing?.name ?? '');
-    final queryTextController =
-        TextEditingController(text: existing?.queryText ?? '');
+    final queryTextController = TextEditingController(
+      text: existing?.queryText ?? '',
+    );
     final tagsController = TextEditingController(
       text: existing?.tags.join(', ') ?? '',
     );
@@ -263,7 +325,9 @@ class _ListeningScreenState extends State<ListeningScreen> {
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(existing == null ? 'New listening query' : 'Edit listening query'),
+        title: Text(
+          existing == null ? 'New listening query' : 'Edit listening query',
+        ),
         content: SizedBox(
           width: 420,
           child: Column(
@@ -295,7 +359,9 @@ class _ListeningScreenState extends State<ListeningScreen> {
               ),
               TextField(
                 controller: tagsController,
-                decoration: const InputDecoration(labelText: 'Tags (comma separated)'),
+                decoration: const InputDecoration(
+                  labelText: 'Tags (comma separated)',
+                ),
               ),
               TextField(
                 controller: competitorsController,
@@ -370,7 +436,10 @@ class _Panel extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                 ),
                 if (actionLabel != null)
                   TextButton.icon(
@@ -383,6 +452,33 @@ class _Panel extends StatelessWidget {
             const SizedBox(height: 12),
             child,
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({required this.title, required this.value});
+
+  final String title;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 220,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 8),
+              Text(value),
+            ],
+          ),
         ),
       ),
     );

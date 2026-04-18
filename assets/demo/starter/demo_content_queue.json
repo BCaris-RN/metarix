@@ -1,0 +1,17 @@
+[
+  {
+    "contentId": "content_launch_week_01",
+    "title": "Launch week reel",
+    "campaign": "Spring Launch",
+    "pillar": "Product Story",
+    "objective": "Drive profile visits",
+    "status": "scheduled",
+    "targetPlatforms": ["instagram", "facebook"],
+    "assetIds": ["asset_reel_launch_01"],
+    "captionVariantIds": ["caption_instagram_launch_01", "caption_facebook_launch_01"],
+    "scheduledAt": "2026-04-18T18:00:00.000Z",
+    "publishedAt": null,
+    "createdAt": "2026-04-13T14:00:00.000Z",
+    "updatedAt": "2026-04-16T08:05:00.000Z"
+  }
+]

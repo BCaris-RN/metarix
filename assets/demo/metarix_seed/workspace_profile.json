@@ -1,0 +1,9 @@
+{
+  "workspaceId": "ws_demo_studio",
+  "displayName": "MetaRix Demo Studio",
+  "mode": "singleUser",
+  "timezone": "Pacific/Honolulu",
+  "defaultPlatforms": ["instagram", "linkedin", "youtube"],
+  "createdAt": "2026-04-01T08:00:00.000Z",
+  "updatedAt": "2026-04-15T17:30:00.000Z"
+}

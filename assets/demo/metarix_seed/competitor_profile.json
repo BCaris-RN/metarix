@@ -1,0 +1,10 @@
+{
+  "competitorId": "competitor_signalforge",
+  "name": "SignalForge",
+  "platforms": ["instagram", "linkedin"],
+  "handles": {
+    "instagram": "@signalforgehq",
+    "linkedin": "signalforge"
+  },
+  "notes": "Track launch cadence, carousel structure, and audience response."
+}

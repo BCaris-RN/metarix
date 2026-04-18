@@ -18,6 +18,8 @@ import '../features/reports/domain/normalized_metric_record.dart';
 import '../features/reports/domain/report_models.dart';
 import '../features/schedule/domain/schedule_models.dart';
 import '../features/shared/domain/core_models.dart';
+import '../features/shared/application/analytics_signal_service.dart';
+import '../features/shared/application/listening_signal_service.dart';
 import '../features/strategy/domain/strategy_models.dart';
 import '../features/workflow/domain/workflow_models.dart';
 import '../features/exports/domain/export_artifact.dart';
@@ -113,9 +115,11 @@ class LocalMetarixGateway extends ChangeNotifier
 
   ReportSnapshot loadReportDataSync() {
     final channelPerformance = _buildChannelPerformance();
+    final analyticsSignals = AnalyticsSignalService(this);
+    final reportPeriods = _snapshot.reportPeriods;
     return ReportSnapshot(
-      activePeriodId: _snapshot.reportPeriods.first.id,
-      reportPeriods: _snapshot.reportPeriods,
+      activePeriodId: reportPeriods.first.id,
+      reportPeriods: reportPeriods,
       comparisonPeriods: _snapshot.comparisonPeriods,
       normalizedMetrics: _snapshot.normalizedMetrics,
       channelPerformance: channelPerformance,
@@ -126,6 +130,10 @@ class LocalMetarixGateway extends ChangeNotifier
       recommendationInsights: _snapshot.recommendationInsights,
       successSnapshot: _snapshot.successSnapshot,
       topPostPlaceholder: _snapshot.topPostPlaceholder,
+      signalSummaries: {
+        for (final period in reportPeriods)
+          period.id: analyticsSignals.signalForPeriod(period.id),
+      },
     );
   }
 
@@ -710,6 +718,7 @@ class LocalMetarixGateway extends ChangeNotifier
 
   @override
   Future<ListeningSnapshot> loadListeningSnapshot() async {
+    final listeningSignals = ListeningSignalService(this);
     return ListeningSnapshot(
       queries: _snapshot.listeningQueries,
       mentions: _snapshot.mentions,
@@ -719,6 +728,11 @@ class LocalMetarixGateway extends ChangeNotifier
       alertRules: _snapshot.listeningAlertRules,
       competitorWatch: _snapshot.competitorWatch,
       sentimentSummary: _snapshot.sentimentSummary,
+      workspaceSignalSummary: listeningSignals.workspaceSignal(),
+      querySignalSummaries: {
+        for (final query in _snapshot.listeningQueries)
+          query.id: listeningSignals.signalForQuery(query.id),
+      },
     );
   }
 

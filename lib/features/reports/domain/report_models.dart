@@ -1,4 +1,5 @@
 import '../../shared/domain/core_models.dart';
+import '../../shared/domain/signal_summary.dart';
 import '../../recommendations/domain/recommendation_model.dart';
 import 'normalized_metric_record.dart';
 
@@ -282,6 +283,7 @@ class ReportSnapshot {
     required this.recommendationInsights,
     required this.successSnapshot,
     required this.topPostPlaceholder,
+    required this.signalSummaries,
   });
 
   final String activePeriodId;
@@ -296,4 +298,9 @@ class ReportSnapshot {
   final List<RecommendationInsight> recommendationInsights;
   final String successSnapshot;
   final String topPostPlaceholder;
+  final Map<String, SignalSummary> signalSummaries;
+
+  SignalSummary signalSummaryFor(String periodId) {
+    return signalSummaries[periodId]!;
+  }
 }

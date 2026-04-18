@@ -1,0 +1,22 @@
+[
+  {
+    "accountId": "acct_instagram_demo",
+    "platform": "instagram",
+    "handle": "@metarixstarter",
+    "displayName": "MetaRix Starter",
+    "connectionStatus": "connected",
+    "scopes": ["content_publish", "insights_read"],
+    "isLocalOnly": true,
+    "lastSyncAt": "2026-04-16T08:05:00.000Z"
+  },
+  {
+    "accountId": "acct_linkedin_demo",
+    "platform": "linkedin",
+    "handle": "metarix-starter",
+    "displayName": "MetaRix Starter",
+    "connectionStatus": "connected",
+    "scopes": ["w_member_social", "r_organization_social"],
+    "isLocalOnly": true,
+    "lastSyncAt": "2026-04-16T08:05:00.000Z"
+  }
+]

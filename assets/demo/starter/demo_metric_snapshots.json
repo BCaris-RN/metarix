@@ -1,0 +1,20 @@
+[
+  {
+    "snapshotId": "snapshot_instagram_day_20260416",
+    "platform": "instagram",
+    "accountId": "acct_instagram_demo",
+    "contentId": "content_launch_week_01",
+    "periodStart": "2026-04-16T00:00:00.000Z",
+    "periodEnd": "2026-04-16T23:59:59.000Z",
+    "impressions": 10240,
+    "reach": 7210,
+    "engagements": 644,
+    "clicks": 108,
+    "followerDelta": 14,
+    "videoViews": 3010,
+    "saves": 42,
+    "shares": 21,
+    "comments": 19,
+    "likes": 562
+  }
+]

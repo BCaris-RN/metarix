@@ -1,51 +1,26 @@
 import 'package:flutter/foundation.dart';
 
-import '../../metarix_core/models/metric_snapshot.dart';
+import '../../data/metarix_snapshot.dart';
+import '../../data/sample_data_pack.dart';
+import '../../features/shared/domain/core_models.dart';
 import '../../metarix_core/models/model_types.dart';
-import 'report_assembly_service.dart';
 import 'report_section.dart';
 
 enum ReportExportFormat { pdf, ppt, json }
 
 class ReportController extends ChangeNotifier {
-  ReportController({
-    ReportAssemblyService? assemblyService,
-    List<MetricSnapshot>? currentMetrics,
-    List<MetricSnapshot>? previousMetrics,
-    List<String>? notableInsights,
-  }) : _assemblyService = assemblyService ?? const ReportAssemblyService(),
-       _currentMetrics = List<MetricSnapshot>.from(
-         currentMetrics ?? _demoCurrentMetrics,
-       ),
-       _previousMetrics = List<MetricSnapshot>.from(
-         previousMetrics ?? _demoPreviousMetrics,
-       ),
-       _notableInsights = List<String>.from(notableInsights ?? _demoInsights) {
+  ReportController({MetarixSnapshot? snapshot})
+    : _snapshot = snapshot ?? SampleDataPack.initialSnapshot() {
     _rebuildAssembly();
   }
 
-  final ReportAssemblyService _assemblyService;
-  List<MetricSnapshot> _currentMetrics;
-  List<MetricSnapshot> _previousMetrics;
-  List<String> _notableInsights;
+  final MetarixSnapshot _snapshot;
   late ReportAssembly _assembly;
   String _exportStatus = 'Export not started.';
 
   ReportAssembly get assembly => _assembly;
 
   String get exportStatus => _exportStatus;
-
-  void updateMetrics({
-    required List<MetricSnapshot> currentMetrics,
-    required List<MetricSnapshot> previousMetrics,
-    required List<String> notableInsights,
-  }) {
-    _currentMetrics = List<MetricSnapshot>.from(currentMetrics);
-    _previousMetrics = List<MetricSnapshot>.from(previousMetrics);
-    _notableInsights = List<String>.from(notableInsights);
-    _rebuildAssembly();
-    notifyListeners();
-  }
 
   Future<void> exportReport(ReportExportFormat format) async {
     _exportStatus =
@@ -54,129 +29,135 @@ class ReportController extends ChangeNotifier {
   }
 
   void _rebuildAssembly() {
-    _assembly = _assemblyService.assemble(
-      currentMetrics: _currentMetrics,
-      previousMetrics: _previousMetrics,
-      notableInsights: _notableInsights,
+    final sortedSignals = List.of(_snapshot.channelPerformance)
+      ..sort((left, right) => right.engagements.compareTo(left.engagements));
+    final strongest = sortedSignals.isEmpty ? null : sortedSignals.first;
+    final totalImpressions = _snapshot.channelPerformance.fold<int>(
+      0,
+      (sum, entry) => sum + entry.impressions,
+    );
+    final totalReach = _snapshot.channelPerformance.fold<int>(
+      0,
+      (sum, entry) => sum + entry.reach,
+    );
+    final totalEngagements = _snapshot.channelPerformance.fold<int>(
+      0,
+      (sum, entry) => sum + entry.engagements,
+    );
+    final totalClicks = _snapshot.channelPerformance.fold<int>(
+      0,
+      (sum, entry) => sum + entry.clicks,
+    );
+
+    _assembly = ReportAssembly(
+      sectionOrder: const [
+        ReportSection.successSnapshot,
+        ReportSection.platformPerformance,
+        ReportSection.standoutResults,
+        ReportSection.analysis,
+        ReportSection.futureStrategy,
+      ],
+      successSnapshot: SuccessSnapshot(
+        headline: strongest == null
+            ? 'No reporting signal available.'
+            : '${strongest.channel.label} led the current signal window with ${strongest.engagements} engagements.',
+        totalImpressions: totalImpressions,
+        totalReach: totalReach,
+        totalEngagements: totalEngagements,
+        totalClicks: totalClicks,
+        totalFollowerDelta: 0,
+        engagementComparison: PeriodComparison(
+          currentValue: totalEngagements,
+          previousValue: 0,
+          deltaValue: totalEngagements,
+          deltaPercent: 0,
+        ),
+      ),
+      platformSummaries: sortedSignals
+          .map(
+            (entry) => PlatformPerformanceSummary(
+              platform: _platformForChannel(entry.channel),
+              impressions: entry.impressions,
+              reach: entry.reach,
+              engagements: entry.engagements,
+              clicks: entry.clicks,
+              followerDelta: 0,
+              videoViews: 0,
+              topContent: TopPerformingContent(
+                contentId: _contentTitleForChannel(entry.channel),
+                engagements: entry.engagements,
+                impressions: entry.impressions,
+                clicks: entry.clicks,
+              ),
+              engagementComparison: PeriodComparison(
+                currentValue: entry.engagements,
+                previousValue: 0,
+                deltaValue: entry.engagements,
+                deltaPercent: 0,
+              ),
+            ),
+          )
+          .toList(),
+      standoutResults: _snapshot.standoutResults
+          .map(
+            (entry) => StandoutResultItem(
+              title: entry.headline,
+              summary: entry.detail,
+            ),
+          )
+          .toList(),
+      analysis: [
+        AnalysisInsight(
+          title: 'Signal summary',
+          body: _snapshot.successSnapshot,
+        ),
+        ..._snapshot.takeaways.map(
+          (entry) =>
+              AnalysisInsight(title: entry.title, body: entry.whatWeLearned),
+        ),
+      ],
+      futureStrategy: _snapshot.futureActions
+          .map(
+            (entry) => FutureStrategyItem(
+              title: entry.title,
+              rationale: entry.rationale,
+            ),
+          )
+          .toList(),
+      exportMessage:
+          'PDF and PPT export are stubbed until live export wiring is added.',
     );
   }
 
-  static final List<MetricSnapshot> _demoCurrentMetrics = [
-    MetricSnapshot(
-      snapshotId: 'curr-ig-1',
-      platform: SocialPlatform.instagram,
-      accountId: 'acct-ig',
-      contentId: 'content-ig-launch',
-      periodStart: DateTime.utc(2026, 4, 1),
-      periodEnd: DateTime.utc(2026, 4, 15),
-      impressions: 18000,
-      reach: 12000,
-      engagements: 1450,
-      clicks: 210,
-      followerDelta: 42,
-      videoViews: 5200,
-      saves: 90,
-      shares: 40,
-      comments: 34,
-      likes: 1286,
-    ),
-    MetricSnapshot(
-      snapshotId: 'curr-li-1',
-      platform: SocialPlatform.linkedin,
-      accountId: 'acct-li',
-      contentId: 'content-li-essay',
-      periodStart: DateTime.utc(2026, 4, 1),
-      periodEnd: DateTime.utc(2026, 4, 15),
-      impressions: 9600,
-      reach: 7100,
-      engagements: 860,
-      clicks: 265,
-      followerDelta: 25,
-      videoViews: 0,
-      saves: 24,
-      shares: 33,
-      comments: 49,
-      likes: 754,
-    ),
-    MetricSnapshot(
-      snapshotId: 'curr-tt-1',
-      platform: SocialPlatform.tiktok,
-      accountId: 'acct-tt',
-      contentId: 'content-tt-pulse',
-      periodStart: DateTime.utc(2026, 4, 1),
-      periodEnd: DateTime.utc(2026, 4, 15),
-      impressions: 22100,
-      reach: 17050,
-      engagements: 1320,
-      clicks: 118,
-      followerDelta: 67,
-      videoViews: 14040,
-      saves: 61,
-      shares: 77,
-      comments: 48,
-      likes: 1134,
-    ),
-  ];
+  SocialPlatform _platformForChannel(SocialChannel channel) {
+    if (channel == SocialChannel.instagram) {
+      return SocialPlatform.instagram;
+    }
+    if (channel == SocialChannel.facebook) {
+      return SocialPlatform.facebook;
+    }
+    if (channel == SocialChannel.linkedin || channel == SocialChannel.x) {
+      return SocialPlatform.linkedin;
+    }
+    if (channel == SocialChannel.youtube) {
+      return SocialPlatform.youtube;
+    }
+    return SocialPlatform.tiktok;
+  }
 
-  static final List<MetricSnapshot> _demoPreviousMetrics = [
-    MetricSnapshot(
-      snapshotId: 'prev-ig-1',
-      platform: SocialPlatform.instagram,
-      accountId: 'acct-ig',
-      contentId: 'content-ig-older',
-      periodStart: DateTime.utc(2026, 3, 16),
-      periodEnd: DateTime.utc(2026, 3, 31),
-      impressions: 15000,
-      reach: 10100,
-      engagements: 1210,
-      clicks: 180,
-      followerDelta: 31,
-      videoViews: 4300,
-      saves: 71,
-      shares: 32,
-      comments: 25,
-      likes: 1082,
-    ),
-    MetricSnapshot(
-      snapshotId: 'prev-li-1',
-      platform: SocialPlatform.linkedin,
-      accountId: 'acct-li',
-      contentId: 'content-li-older',
-      periodStart: DateTime.utc(2026, 3, 16),
-      periodEnd: DateTime.utc(2026, 3, 31),
-      impressions: 8800,
-      reach: 6450,
-      engagements: 740,
-      clicks: 230,
-      followerDelta: 20,
-      videoViews: 0,
-      saves: 16,
-      shares: 28,
-      comments: 39,
-      likes: 657,
-    ),
-    MetricSnapshot(
-      snapshotId: 'prev-tt-1',
-      platform: SocialPlatform.tiktok,
-      accountId: 'acct-tt',
-      contentId: 'content-tt-older',
-      periodStart: DateTime.utc(2026, 3, 16),
-      periodEnd: DateTime.utc(2026, 3, 31),
-      impressions: 19050,
-      reach: 15020,
-      engagements: 1110,
-      clicks: 96,
-      followerDelta: 49,
-      videoViews: 12200,
-      saves: 54,
-      shares: 59,
-      comments: 35,
-      likes: 962,
-    ),
-  ];
-
-  static const List<String> _demoInsights = [
-    'Carousel explainers converted especially well on LinkedIn when the first card led with an opinion.',
-    'Short-form edits on TikTok created the strongest follower lift when the hook landed in the first two seconds.',
-  ];
+  String _contentTitleForChannel(SocialChannel channel) {
+    final scheduled = _snapshot.scheduledPosts.where(
+      (entry) => entry.channel == channel,
+    );
+    if (scheduled.isNotEmpty) {
+      return scheduled.first.title;
+    }
+    final draft = _snapshot.drafts.where(
+      (entry) => entry.targetNetwork == channel,
+    );
+    if (draft.isNotEmpty) {
+      return draft.first.title;
+    }
+    return '${channel.label} content unit';
+  }
 }

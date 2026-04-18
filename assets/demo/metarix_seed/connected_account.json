@@ -1,0 +1,10 @@
+{
+  "accountId": "acct_instagram_demo",
+  "platform": "instagram",
+  "handle": "@metarixdemo",
+  "displayName": "MetaRix Demo",
+  "connectionStatus": "connected",
+  "scopes": ["content_publish", "insights_read"],
+  "isLocalOnly": true,
+  "lastSyncAt": "2026-04-15T16:45:00.000Z"
+}

@@ -1,0 +1,8 @@
+{
+  "watchTermId": "watch_brand_metarix",
+  "term": "MetaRix",
+  "platformScope": ["instagram", "linkedin", "youtube"],
+  "category": "brand",
+  "booleanQuery": "\"MetaRix\" OR \"Meta Rix\"",
+  "isActive": true
+}

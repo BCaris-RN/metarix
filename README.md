@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/MetaRix_Internally_Flawless/metarix-readme-top.png" alt="MetaRix wordmark" width="720" />
+</p>
+
 # MetaRix
 
 MetaRix is a public build in progress focused on making modern marketing operations more structured, visible, and execution-ready.

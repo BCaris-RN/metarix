@@ -1,0 +1,8 @@
+{
+  "templateId": "report_growth_weekly",
+  "name": "Weekly Growth Pulse",
+  "cadence": "weekly",
+  "includedPlatforms": ["instagram", "linkedin", "youtube"],
+  "includedSections": ["summary", "top_content", "audience", "watch_terms"],
+  "outputFormats": ["pdf", "json"]
+}

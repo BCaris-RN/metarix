@@ -14,6 +14,15 @@ void main() {
     final controller = ReportController(gateway, gateway);
     final periodId = gateway.snapshot.reportPeriods.first.id;
 
+    expect(
+      controller.snapshot
+          .signalSummaryFor(periodId)
+          .topContentUnits
+          .first
+          .title,
+      'Trail tip reel',
+    );
+
     await controller.generateReport(periodId);
 
     final events = gateway.viewActivityEvents(
@@ -22,7 +31,9 @@ void main() {
       objectId: periodId,
     );
     expect(
-      events.any((event) => event.eventType == ActivityEventType.reportGenerated),
+      events.any(
+        (event) => event.eventType == ActivityEventType.reportGenerated,
+      ),
       isTrue,
     );
   });

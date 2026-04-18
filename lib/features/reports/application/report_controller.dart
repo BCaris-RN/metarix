@@ -4,30 +4,51 @@ import '../../../data/local_metarix_gateway.dart';
 import '../../../repositories/report_repository.dart';
 import '../../../runtime/activity/activity_event.dart';
 import '../../../runtime/activity/activity_event_type.dart';
+import '../../shared/application/analytics_signal_service.dart';
+import '../../shared/domain/signal_summary.dart';
 import '../domain/report_models.dart';
 
 class ReportController extends ChangeNotifier {
-  ReportController(this._reportRepository, this._gateway) {
+  ReportController(
+    this._reportRepository,
+    this._gateway, {
+    AnalyticsSignalService? analyticsSignalService,
+  }) : _analyticsSignalService =
+           analyticsSignalService ?? AnalyticsSignalService(_gateway) {
     _gateway.addListener(notifyListeners);
   }
 
   final ReportRepository _reportRepository;
   final LocalMetarixGateway _gateway;
+  final AnalyticsSignalService _analyticsSignalService;
 
-  ReportSnapshot get snapshot => ReportSnapshot(
-    activePeriodId: _gateway.snapshot.reportPeriods.first.id,
-    reportPeriods: _gateway.snapshot.reportPeriods,
-    comparisonPeriods: _gateway.snapshot.comparisonPeriods,
-    normalizedMetrics: _gateway.snapshot.normalizedMetrics,
-    channelPerformance: _gateway.loadReportDataSync().channelPerformance,
-    standoutResults: _gateway.snapshot.standoutResults,
-    takeaways: _gateway.snapshot.takeaways,
-    overallLearnings: _gateway.snapshot.overallLearnings,
-    futureActions: _gateway.snapshot.futureActions,
-    recommendationInsights: _gateway.snapshot.recommendationInsights,
-    successSnapshot: _gateway.snapshot.successSnapshot,
-    topPostPlaceholder: _gateway.snapshot.topPostPlaceholder,
-  );
+  ReportSnapshot get snapshot {
+    final reportSnapshot = _gateway.loadReportDataSync();
+    final signalSummaries = <String, SignalSummary>{
+      for (final period in reportSnapshot.reportPeriods)
+        period.id: _analyticsSignalService.signalForPeriod(period.id),
+    };
+    final activeSummary = signalSummaries[reportSnapshot.activePeriodId];
+
+    return ReportSnapshot(
+      activePeriodId: reportSnapshot.activePeriodId,
+      reportPeriods: reportSnapshot.reportPeriods,
+      comparisonPeriods: reportSnapshot.comparisonPeriods,
+      normalizedMetrics: reportSnapshot.normalizedMetrics,
+      channelPerformance: reportSnapshot.channelPerformance,
+      standoutResults: reportSnapshot.standoutResults,
+      takeaways: reportSnapshot.takeaways,
+      overallLearnings: reportSnapshot.overallLearnings,
+      futureActions: reportSnapshot.futureActions,
+      recommendationInsights: reportSnapshot.recommendationInsights,
+      successSnapshot: reportSnapshot.successSnapshot,
+      topPostPlaceholder:
+          activeSummary == null || activeSummary.topContentUnits.isEmpty
+          ? 'No linked content unit'
+          : activeSummary.topContentUnits.first.title,
+      signalSummaries: signalSummaries,
+    );
+  }
 
   Future<void> saveTakeaway(Takeaway takeaway) async {
     await _reportRepository.saveTakeaway(takeaway);

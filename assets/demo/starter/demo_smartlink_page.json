@@ -1,0 +1,24 @@
+{
+  "pageId": "smartlink_starter_01",
+  "slug": "starter",
+  "title": "MetaRix Starter",
+  "heroText": "One place for the launch path.",
+  "themeKey": "sunrise-grid",
+  "blocks": [
+    {
+      "blockId": "block_hero_01",
+      "type": "hero",
+      "label": "Starter workspace",
+      "body": "Demo content, local accounts, and queued posts ready for a self-hosted test run.",
+      "linkUrl": null
+    },
+    {
+      "blockId": "block_button_01",
+      "type": "button",
+      "label": "Open planner",
+      "body": null,
+      "linkUrl": "https://example.com/planner"
+    }
+  ],
+  "updatedAt": "2026-04-16T08:10:00.000Z"
+}

@@ -1,0 +1,10 @@
+{
+  "alertEventId": "alert_publish_failure_01",
+  "type": "publishFailure",
+  "severity": "high",
+  "sourceRef": "job_launch_instagram_01",
+  "title": "Instagram publish needs attention",
+  "message": "The queued launch reel failed during media validation and should be retried locally.",
+  "createdAt": "2026-04-15T12:05:00.000Z",
+  "isRead": false
+}
