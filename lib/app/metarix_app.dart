@@ -5,6 +5,7 @@ import '../features/activity/activity_timeline_screen.dart';
 import '../features/admin/domain/admin_models.dart';
 import '../features/admin/presentation/admin_screen.dart';
 import '../features/assets/presentation/asset_library_screen.dart';
+import '../features/inbox/presentation/inbox_screen.dart';
 import '../features/listening/presentation/listening_screen.dart';
 import '../features/planning/presentation/planning_screen.dart';
 import '../features/reports/presentation/reports_screen.dart';
@@ -28,13 +29,22 @@ class MetarixApp extends StatefulWidget {
 class _MetarixAppState extends State<MetarixApp> {
   int _selectedIndex = 0;
   final MetarixThemeController _themeController = MetarixThemeController();
+  late final Future<bool> _backendHealthy;
 
-  static const _demoPath = [0, 1, 2, 4, 5, 6, 7];
+  @override
+  void initState() {
+    super.initState();
+    _backendHealthy = widget.services.backendApiService.health();
+  }
+
+  static const _demoPath = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   static const _items = [
+    _ShellItem('Publish', Icons.send_outlined),
     _ShellItem('Strategy', Icons.flag_outlined),
     _ShellItem('Planning', Icons.view_week_outlined),
     _ShellItem('Workflow', Icons.rule_folder_outlined),
     _ShellItem('Schedule', Icons.calendar_month_outlined),
+    _ShellItem('Inbox', Icons.forum_outlined),
     _ShellItem('Reports', Icons.bar_chart_outlined),
     _ShellItem('Listening', Icons.hearing_outlined),
     _ShellItem('Assets', Icons.perm_media_outlined),
@@ -101,8 +111,16 @@ class _MetarixAppState extends State<MetarixApp> {
                       child: AnimatedBuilder(
                         animation: widget.services.adminController,
                         builder: (context, _) {
-                          return Text(
-                            '${widget.services.gateway.workspace.name} - ${widget.services.adminController.currentRole.label}',
+                          return FutureBuilder<bool>(
+                            future: _backendHealthy,
+                            builder: (context, snapshot) {
+                              final backendLabel = snapshot.connectionState == ConnectionState.done
+                                  ? (snapshot.data == true ? 'Backend online' : 'Backend offline')
+                                  : 'Backend checking';
+                              return Text(
+                                '${widget.services.gateway.workspace.name} - ${widget.services.adminController.currentRole.label} - $backendLabel',
+                              );
+                            },
                           );
                         },
                       ),
@@ -117,6 +135,11 @@ class _MetarixAppState extends State<MetarixApp> {
 
                   return Column(
                     children: [
+                      _CreatorLaunchPad(
+                        onOpenPublish: () => setState(() => _selectedIndex = 0),
+                        onOpenWorkflow: () => setState(() => _selectedIndex = 3),
+                        onPublishEverywhere: () => setState(() => _selectedIndex = 3),
+                      ),
                       _DemoBanner(
                         currentIndex: _selectedIndex,
                         onNext: () {
@@ -185,16 +208,81 @@ class _MetarixAppState extends State<MetarixApp> {
 
   Widget _buildCurrentScreen() {
     return switch (_selectedIndex) {
-      0 => const StrategyScreen(),
-      1 => const PlanningScreen(),
-      2 => const WorkflowScreen(),
-      3 => const ScheduleScreen(),
-      4 => const ReportsScreen(),
-      5 => const ListeningScreen(),
-      6 => const AssetLibraryScreen(),
-      7 => const ActivityTimelineScreen(),
-      _ => const AdminScreen(),
-    };
+      0 => const WorkflowScreen(),
+      1 => const StrategyScreen(),
+          2 => const PlanningScreen(),
+          3 => const WorkflowScreen(),
+          4 => const ScheduleScreen(),
+          5 => const InboxScreen(),
+          6 => const ReportsScreen(),
+          7 => const ListeningScreen(),
+          8 => const AssetLibraryScreen(),
+          9 => const ActivityTimelineScreen(),
+          10 => const AdminScreen(),
+          _ => const WorkflowScreen(),
+        };
+  }
+}
+
+class _CreatorLaunchPad extends StatelessWidget {
+  const _CreatorLaunchPad({
+    required this.onOpenPublish,
+    required this.onOpenWorkflow,
+    required this.onPublishEverywhere,
+  });
+
+  final VoidCallback onOpenPublish;
+  final VoidCallback onOpenWorkflow;
+  final VoidCallback onPublishEverywhere;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      child: Card(
+        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.65),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Creator first',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Jump straight into publishing. Compose once, then push to Instagram, Facebook, and LinkedIn.',
+                    ),
+                  ],
+                ),
+              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton(
+                    onPressed: onOpenPublish,
+                    child: const Text('Open Publish'),
+                  ),
+                  OutlinedButton(
+                    onPressed: onOpenWorkflow,
+                    child: const Text('Open Workflow'),
+                  ),
+                  FilledButton.tonal(
+                    onPressed: onPublishEverywhere,
+                    child: const Text('Publish Everywhere'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -221,7 +309,7 @@ class _DemoBanner extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(
-            'Demo path: Strategy -> Planning -> Workflow -> Reports -> Listening -> Assets -> Activity',
+            'Demo path: Publish -> Strategy -> Planning -> Workflow -> Schedule -> Inbox -> Reports -> Listening -> Assets -> Activity -> Admin',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           FilledButton(onPressed: onNext, child: const Text('Go To Next Step')),

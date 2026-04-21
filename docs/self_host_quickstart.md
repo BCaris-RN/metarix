@@ -20,11 +20,24 @@ Local connected mode uses your own machine-local configuration, export folders, 
 ## How To Run Demo Mode
 
 1. Clone the repo.
-2. Install dependencies.
-3. Run the app with the bundled demo data.
-4. Use the in-app `Reset Demo` action if you want to restore the starter state.
+2. Change into the repo root.
+3. Install dependencies.
+4. Run the app with the bundled public-safe sample workspace.
+5. Use the in-app `Reset Demo` action if you want to restore the starter state.
 
-The demo bundle includes a starter workspace profile, connected-account placeholders, a content queue, metrics, and a smartlink page example.
+Run from the repository root:
+
+```powershell
+cd G:\metarix
+flutter pub get
+flutter analyze
+flutter test
+flutter run -d chrome
+```
+
+The default boot path seeds a starter workspace into local persistence on first run, then reloads that local state on later runs until `Reset Demo` is used.
+
+The public-safe sample workspace includes a starter workspace profile, connected-account placeholders, a content queue, metrics, and a smartlink page example.
 
 ## How To Add Local `.env`
 
@@ -85,4 +98,3 @@ Supported public-facing connector families are:
 - local databases
 - machine-specific runtime config
 - proprietary source material copied from other repositories
-

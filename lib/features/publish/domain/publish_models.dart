@@ -39,6 +39,12 @@ class ScheduledPostRecord {
     required this.updatedAt,
     required this.lastError,
     required this.denialReasons,
+    this.externalPlatformPostId,
+    this.externalAccountId,
+    this.platformPublishStatus,
+    this.platformErrorCode,
+    this.platformErrorMessage,
+    this.publishedAtIso,
   });
 
   final String id;
@@ -54,6 +60,12 @@ class ScheduledPostRecord {
   final DateTime updatedAt;
   final String? lastError;
   final List<DenialReason> denialReasons;
+  final String? externalPlatformPostId;
+  final String? externalAccountId;
+  final String? platformPublishStatus;
+  final String? platformErrorCode;
+  final String? platformErrorMessage;
+  final String? publishedAtIso;
 
   ScheduledPostRecord copyWith({
     String? id,
@@ -73,6 +85,18 @@ class ScheduledPostRecord {
     String? lastError,
     bool clearLastError = false,
     List<DenialReason>? denialReasons,
+    String? externalPlatformPostId,
+    bool clearExternalPlatformPostId = false,
+    String? externalAccountId,
+    bool clearExternalAccountId = false,
+    String? platformPublishStatus,
+    bool clearPlatformPublishStatus = false,
+    String? platformErrorCode,
+    bool clearPlatformErrorCode = false,
+    String? platformErrorMessage,
+    bool clearPlatformErrorMessage = false,
+    String? publishedAtIso,
+    bool clearPublishedAtIso = false,
   }) {
     return ScheduledPostRecord(
       id: id ?? this.id,
@@ -88,6 +112,24 @@ class ScheduledPostRecord {
       updatedAt: updatedAt ?? this.updatedAt,
       lastError: clearLastError ? null : lastError ?? this.lastError,
       denialReasons: denialReasons ?? this.denialReasons,
+      externalPlatformPostId: clearExternalPlatformPostId
+          ? null
+          : externalPlatformPostId ?? this.externalPlatformPostId,
+      externalAccountId: clearExternalAccountId
+          ? null
+          : externalAccountId ?? this.externalAccountId,
+      platformPublishStatus: clearPlatformPublishStatus
+          ? null
+          : platformPublishStatus ?? this.platformPublishStatus,
+      platformErrorCode: clearPlatformErrorCode
+          ? null
+          : platformErrorCode ?? this.platformErrorCode,
+      platformErrorMessage: clearPlatformErrorMessage
+          ? null
+          : platformErrorMessage ?? this.platformErrorMessage,
+      publishedAtIso: clearPublishedAtIso
+          ? null
+          : publishedAtIso ?? this.publishedAtIso,
     );
   }
 
@@ -105,6 +147,12 @@ class ScheduledPostRecord {
     'updatedAt': updatedAt.toIso8601String(),
     'lastError': lastError,
     'denialReasons': denialReasons.map((reason) => reason.toJson()).toList(),
+    'externalPlatformPostId': externalPlatformPostId,
+    'externalAccountId': externalAccountId,
+    'platformPublishStatus': platformPublishStatus,
+    'platformErrorCode': platformErrorCode,
+    'platformErrorMessage': platformErrorMessage,
+    'publishedAtIso': publishedAtIso,
   };
 
   factory ScheduledPostRecord.fromJson(Map<String, dynamic> json) =>
@@ -131,5 +179,11 @@ class ScheduledPostRecord {
             .cast<Map<String, dynamic>>()
             .map(DenialReason.fromJson)
             .toList(),
+        externalPlatformPostId: json['externalPlatformPostId'] as String?,
+        externalAccountId: json['externalAccountId'] as String?,
+        platformPublishStatus: json['platformPublishStatus'] as String?,
+        platformErrorCode: json['platformErrorCode'] as String?,
+        platformErrorMessage: json['platformErrorMessage'] as String?,
+        publishedAtIso: json['publishedAtIso'] as String?,
       );
 }

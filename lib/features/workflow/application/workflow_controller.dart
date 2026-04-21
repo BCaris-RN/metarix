@@ -2,6 +2,11 @@ import 'package:flutter/foundation.dart';
 
 import '../../../data/local_metarix_gateway.dart';
 import '../../../features/admin/domain/admin_models.dart';
+import '../../../metarix_core/connectors/connector_bundle.dart';
+import '../../../metarix_core/connectors/connector_result.dart';
+import '../../../metarix_core/models/content_item.dart';
+import '../../../metarix_core/models/connector_models.dart';
+import '../../../metarix_core/models/model_types.dart';
 import '../../../features/publish/application/publish_state_transition_service.dart';
 import '../../../features/publish/domain/publish_models.dart';
 import '../../../features/schedule/domain/schedule_models.dart';
@@ -22,6 +27,7 @@ class WorkflowController extends ChangeNotifier {
     this._scheduleRepository,
     this._publishStateRepository,
     this._gateway,
+    this._connectorBundle,
     this._accessControlService,
     this._publishPostureEvaluator,
     this._publishStateTransitionService,
@@ -34,6 +40,7 @@ class WorkflowController extends ChangeNotifier {
   final ScheduleRepository _scheduleRepository;
   final PublishStateRepository _publishStateRepository;
   final LocalMetarixGateway _gateway;
+  final ConnectorBundle _connectorBundle;
   final AccessControlService _accessControlService;
   final PublishPostureEvaluator _publishPostureEvaluator;
   final PublishStateTransitionService _publishStateTransitionService;
@@ -235,6 +242,18 @@ class WorkflowController extends ChangeNotifier {
     }
   }
 
+  Future<List<ConnectorResult<PublishReceipt>>> publishDraftToTargets(
+    PostDraft draft, {
+    List<SocialPlatform>? targets,
+  }) async {
+    final selectedTargets = targets ?? const [SocialPlatform.instagram];
+    final results = <ConnectorResult<PublishReceipt>>[];
+    for (final platform in selectedTargets) {
+      results.add(await _publishSingleDraft(draft, platform));
+    }
+    return results;
+  }
+
   Future<void> toggleEvidence(PostDraft draft, String evidenceCode) async {
     final nextEvidence = List<String>.from(draft.evidenceCodes);
     if (nextEvidence.contains(evidenceCode)) {
@@ -270,6 +289,89 @@ class WorkflowController extends ChangeNotifier {
             denialReasons: scheduleRecord?.denialReasons,
           );
     await _publishStateRepository.saveScheduledPostRecord(nextRecord);
+  }
+
+  Future<ConnectorResult<PublishReceipt>> _publishSingleDraft(
+    PostDraft draft,
+    SocialPlatform platform,
+  ) async {
+    final content = ContentItem(
+      contentId: draft.id,
+      title: draft.title,
+      campaign: _campaignNameFor(draft.campaignId),
+      pillar: draft.contentPillarId,
+      objective: draft.requiredApproval.label,
+      status: ContentStatus.approved,
+      targetPlatforms: [platform],
+      assetIds: draft.assetRefs.map((asset) => asset.id).toList(),
+      captionVariantIds: const [],
+      scheduledAt: draft.plannedPublishAt,
+      publishedAt: null,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    final record = publishRecordFor(draft.id);
+    final syncedRecord = _publishStateTransitionService.syncDraftRecord(
+      draft: draft,
+      campaignName: _campaignNameFor(draft.campaignId),
+      existing: record,
+      schedule: scheduleFor(draft.id),
+    );
+    final queuedRecord = _publishStateTransitionService.transition(
+      syncedRecord,
+      PublishRecordStatus.queued,
+      occurredAt: DateTime.now(),
+      scheduledAt: draft.plannedPublishAt ?? DateTime.now(),
+    );
+    await _publishStateRepository.saveScheduledPostRecord(queuedRecord);
+
+    final connector = _connectorBundle.publishConnectorFor(platform);
+    final accountId = _gateway.connectedAccountFor(platform.name)?.externalAccountId ??
+        'demo-${platform.name}-account';
+    final validation = await connector.validatePost(content);
+    if (!validation.isSuccess || validation.value == null || !validation.value!.isValid) {
+      final validationErrors = validation.value?.errors ?? <String>[];
+      final failedRecord = _publishStateTransitionService.transition(
+        queuedRecord,
+        PublishRecordStatus.failed,
+        occurredAt: DateTime.now(),
+        scheduledAt: draft.plannedPublishAt ?? DateTime.now(),
+        errorMessage: validationErrors.join(' '),
+      );
+      await _publishStateRepository.saveScheduledPostRecord(failedRecord);
+      return ConnectorResult.failure(error: validationErrors.join(' '));
+    }
+
+    final receipt = await connector.publishNow(content, accountId: accountId);
+    if (receipt.isSuccess && receipt.value != null) {
+      final publishedRecord = _publishStateTransitionService.transition(
+        queuedRecord,
+        PublishRecordStatus.published,
+        occurredAt: DateTime.now(),
+        scheduledAt: draft.plannedPublishAt ?? DateTime.now(),
+      );
+      await _publishStateRepository.saveScheduledPostRecord(publishedRecord);
+      final updatedDraft = draft.copyWith(currentState: ContentState.published);
+      await _draftRepository.updateDraft(updatedDraft);
+      await _recordActivity(
+        objectType: ActivityObjectType.schedule,
+        objectId: publishedRecord.id,
+        objectLabel: draft.title,
+        eventType: ActivityEventType.published,
+        reason: 'Published to ${platform.label}.',
+      );
+      return receipt;
+    }
+
+    final failedRecord = _publishStateTransitionService.transition(
+      queuedRecord,
+      PublishRecordStatus.failed,
+      occurredAt: DateTime.now(),
+      scheduledAt: draft.plannedPublishAt ?? DateTime.now(),
+      errorMessage: receipt.error ?? 'Publish failed.',
+    );
+    await _publishStateRepository.saveScheduledPostRecord(failedRecord);
+    return ConnectorResult.failure(error: receipt.error ?? 'Publish failed.');
   }
 
   String _campaignNameFor(String campaignId) {

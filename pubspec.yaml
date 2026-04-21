@@ -1,5 +1,5 @@
 name: metarix
-description: "MetaRix Phoenix runtime shell."
+description: "MetaRix local-first runtime shell."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -32,6 +32,7 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.8
+  crypto: ^3.0.6
   http: ^1.4.0
   shared_preferences: ^2.5.3
 
@@ -50,6 +51,7 @@ flutter:
   assets:
     - assets/demo/metarix_seed/
     - assets/demo/reports/
+    - assets/brand/
     - caris/connector_capability_registry.json
     - caris/channel_action_permissions.json
     - caris/approval_policy_matrix.json

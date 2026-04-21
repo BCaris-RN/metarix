@@ -23,7 +23,7 @@ V1 will prove that MetaRix can support:
 
 ## 3. V1 product slices
 
-### Slice A — Strategy workspace
+### Slice A - Strategy workspace
 
 Purpose:
 Capture the operating context that drives downstream social execution.
@@ -42,7 +42,7 @@ Required capabilities:
 V1 output:
 A structured strategy record that can be referenced by campaigns and reports.
 
-### Slice B — Campaign and planning workspace
+### Slice B - Campaign and planning workspace
 
 Purpose:
 Turn strategy into planned work.
@@ -62,7 +62,7 @@ Required capabilities:
 V1 output:
 A usable calendar and content workspace tied to real campaign objects.
 
-### Slice C — Draft and approval workflow
+### Slice C - Draft and approval workflow
 
 Purpose:
 Move content through a bounded control path before scheduling or execution.
@@ -79,7 +79,7 @@ Required capabilities:
 V1 output:
 A clear content state machine from draft to approved.
 
-### Slice D — Scheduling posture
+### Slice D - Scheduling posture
 
 Purpose:
 Prove bounded scheduling workflow without requiring full omnichannel complexity on day one.
@@ -96,7 +96,7 @@ Required capabilities:
 V1 output:
 A controlled schedule record ready for future execution depth.
 
-### Slice E — Baseline reporting
+### Slice E - Baseline reporting
 
 Purpose:
 Make operators capable of measuring performance and documenting learnings.
@@ -114,7 +114,7 @@ Required capabilities:
 V1 output:
 A manager-readable report built from structured inputs.
 
-### Slice F — Evidence visibility
+### Slice F - Evidence visibility
 
 Purpose:
 Make major operator actions visible, reviewable, and bounded.
@@ -144,7 +144,7 @@ The following are excluded from V1 unless directly promoted by a later scope dec
 - warehouse-scale attribution modeling
 - cross-channel paid/organic unified attribution
 - production-grade recommendation automation
-- Caris doctrine authoring inside Phoenix
+- doctrine authoring inside the runtime
 
 ## 5. V1 delivery rules
 
@@ -158,7 +158,7 @@ Every major V1 capability must connect to a structured domain object.
 Every major V1 workflow state must be named, visible, and testable.
 
 ### Rule 4
-Every bounded execution surface must be compatible with future Caris policy enforcement.
+Every bounded execution surface must be compatible with future policy enforcement.
 
 ### Rule 5
 The UI must not imply publish authority where none exists.
@@ -169,8 +169,8 @@ Suggested top-level product structure for the MetaRix repo:
 
 - `docs/`
 - `caris/`
-- `phoenix/`
-- optional local `8gentiC/` projection only where project-specific orchestration manifests are needed
+- root Flutter app surfaces such as `lib/`, `test/`, and platform folders
+- optional local orchestration projection only where project-specific manifests are needed
 
 ## 7. V1 acceptance criteria
 
@@ -184,7 +184,7 @@ V1 is acceptable when all of the following are true:
 6. A user can assign a schedule target and see bounded schedule posture.
 7. A user can produce a structured report for a period.
 8. A user can review baseline evidence for approval and scheduling state.
-9. The implementation preserves 8gentiC / Caris / Phoenix boundaries.
+9. The implementation preserves governance, runtime, and review boundaries.
 
 ## 8. V1 backlog order
 
@@ -215,7 +215,7 @@ V1 is acceptable when all of the following are true:
 
 MetaRix V1 should be presented as:
 
-“A governed planning, approval, scheduling, and reporting foundation for enterprise social operations.”
+"A governed planning, approval, scheduling, and reporting foundation for enterprise social operations."
 
 It should not be presented as:
 

@@ -4,38 +4,17 @@ import '../../../data/local_metarix_gateway.dart';
 import '../../../repositories/listening_query_repository.dart';
 import '../../../runtime/activity/activity_event.dart';
 import '../../../runtime/activity/activity_event_type.dart';
-import '../../shared/application/listening_signal_service.dart';
 import '../domain/listening_models.dart';
 
 class ListeningController extends ChangeNotifier {
-  ListeningController(
-    this._repository,
-    this._gateway, {
-    ListeningSignalService? listeningSignalService,
-  }) : _listeningSignalService =
-           listeningSignalService ?? ListeningSignalService(_gateway) {
+  ListeningController(this._repository, this._gateway) {
     _gateway.addListener(notifyListeners);
   }
 
   final ListeningQueryRepository _repository;
   final LocalMetarixGateway _gateway;
-  final ListeningSignalService _listeningSignalService;
 
-  ListeningSnapshot get snapshot => ListeningSnapshot(
-    queries: _gateway.snapshot.listeningQueries,
-    mentions: _gateway.snapshot.mentions,
-    spikes: _gateway.snapshot.spikes,
-    resultGroups: _gateway.listeningResultGroups(),
-    shareOfVoiceSnapshots: _gateway.snapshot.shareOfVoiceSnapshots,
-    alertRules: _gateway.snapshot.listeningAlertRules,
-    competitorWatch: _gateway.snapshot.competitorWatch,
-    sentimentSummary: _gateway.snapshot.sentimentSummary,
-    workspaceSignalSummary: _listeningSignalService.workspaceSignal(),
-    querySignalSummaries: {
-      for (final query in _gateway.snapshot.listeningQueries)
-        query.id: _listeningSignalService.signalForQuery(query.id),
-    },
-  );
+  ListeningSnapshot get snapshot => _gateway.loadListeningSnapshotSync();
 
   Future<void> saveQuery(ListeningQuery query) async {
     final existing = snapshot.queries.any((entry) => entry.id == query.id);

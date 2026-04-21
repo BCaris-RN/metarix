@@ -6,11 +6,10 @@ Public repo material must be expressed in MetaRix-native language. If a concept 
 
 Never copy proprietary source files, schemas, manifests, semantic bundles, screenshots, fixtures, or internal path names into this public repo.
 
-Never ship repo content containing these strings except inside this policy doc itself:
+Do not introduce prior private repo names, copied path signatures, or legacy markers that are not part of the current MetaRix public repo contract.
 
-- `8gentiC`
-- `caris`
-- `phoenix`
+Examples of strings that should not appear in newly added public repo content unless they are being discussed inside provenance policy or review notes:
+
 - `Suprema_C`
 - `cp_super_stack`
 - `legacy_phoenix_ref`

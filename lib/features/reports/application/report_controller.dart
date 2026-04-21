@@ -1,54 +1,26 @@
 import 'package:flutter/foundation.dart';
+import 'dart:convert';
+import 'dart:io';
 
 import '../../../data/local_metarix_gateway.dart';
 import '../../../repositories/report_repository.dart';
 import '../../../runtime/activity/activity_event.dart';
 import '../../../runtime/activity/activity_event_type.dart';
-import '../../shared/application/analytics_signal_service.dart';
-import '../../shared/domain/signal_summary.dart';
 import '../domain/report_models.dart';
 
 class ReportController extends ChangeNotifier {
-  ReportController(
-    this._reportRepository,
-    this._gateway, {
-    AnalyticsSignalService? analyticsSignalService,
-  }) : _analyticsSignalService =
-           analyticsSignalService ?? AnalyticsSignalService(_gateway) {
+  ReportController(this._reportRepository, this._gateway) {
     _gateway.addListener(notifyListeners);
   }
 
   final ReportRepository _reportRepository;
   final LocalMetarixGateway _gateway;
-  final AnalyticsSignalService _analyticsSignalService;
 
-  ReportSnapshot get snapshot {
-    final reportSnapshot = _gateway.loadReportDataSync();
-    final signalSummaries = <String, SignalSummary>{
-      for (final period in reportSnapshot.reportPeriods)
-        period.id: _analyticsSignalService.signalForPeriod(period.id),
-    };
-    final activeSummary = signalSummaries[reportSnapshot.activePeriodId];
+  ReportSnapshot get snapshot => _gateway.loadReportDataSync();
 
-    return ReportSnapshot(
-      activePeriodId: reportSnapshot.activePeriodId,
-      reportPeriods: reportSnapshot.reportPeriods,
-      comparisonPeriods: reportSnapshot.comparisonPeriods,
-      normalizedMetrics: reportSnapshot.normalizedMetrics,
-      channelPerformance: reportSnapshot.channelPerformance,
-      standoutResults: reportSnapshot.standoutResults,
-      takeaways: reportSnapshot.takeaways,
-      overallLearnings: reportSnapshot.overallLearnings,
-      futureActions: reportSnapshot.futureActions,
-      recommendationInsights: reportSnapshot.recommendationInsights,
-      successSnapshot: reportSnapshot.successSnapshot,
-      topPostPlaceholder:
-          activeSummary == null || activeSummary.topContentUnits.isEmpty
-          ? 'No linked content unit'
-          : activeSummary.topContentUnits.first.title,
-      signalSummaries: signalSummaries,
-    );
-  }
+  String _exportStatus = 'Export not started.';
+
+  String get exportStatus => _exportStatus;
 
   Future<void> saveTakeaway(Takeaway takeaway) async {
     await _reportRepository.saveTakeaway(takeaway);
@@ -90,6 +62,110 @@ class ReportController extends ChangeNotifier {
     );
   }
 
+  Future<void> exportReport(String periodId, String format) async {
+    final snapshot = _gateway.loadReportDataSync();
+    final period = snapshot.reportPeriods.firstWhere(
+      (entry) => entry.id == periodId,
+    );
+    final signalSummary = snapshot.signalSummaryFor(periodId);
+    final exportDir = await _exportDirectory();
+    final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
+    final safeFormat = format.toLowerCase();
+    final file = File(
+      '${exportDir.path}\\${period.id}-$timestamp.$safeFormat',
+    );
+
+    final payload = {
+      'workspace': _gateway.workspace.name,
+      'period': period.toJson(),
+      'successSnapshot': snapshot.successSnapshot,
+      'signalSummary': {
+        'engagement': signalSummary.engagement == null
+            ? null
+            : {
+                'topChannelLabel': signalSummary.engagement!.topChannelLabel,
+                'totalImpressions': signalSummary.engagement!.totalImpressions,
+                'totalReach': signalSummary.engagement!.totalReach,
+                'totalEngagements': signalSummary.engagement!.totalEngagements,
+                'totalClicks': signalSummary.engagement!.totalClicks,
+                'comparisonDelta': signalSummary.engagement!.comparisonDelta,
+                'comparisonLabel': signalSummary.engagement!.comparisonLabel,
+              },
+        'topContentUnits': signalSummary.topContentUnits
+            .map(
+              (entry) => {
+                'channelLabel': entry.channelLabel,
+                'title': entry.title,
+                'engagements': entry.engagements,
+                'clicks': entry.clicks,
+              },
+            )
+            .toList(),
+        'takeaways': snapshot.takeaways
+            .where((entry) => entry.reportPeriodId == periodId)
+            .map((entry) => entry.toJson())
+            .toList(),
+        'learningEntries': snapshot.overallLearnings
+            .where((entry) => entry.reportPeriodId == periodId)
+            .map((entry) => entry.toJson())
+            .toList(),
+        'futureActions': snapshot.futureActions
+            .where((entry) => entry.reportPeriodId == periodId)
+            .map((entry) => entry.toJson())
+            .toList(),
+        'standoutResults': snapshot.standoutResults
+            .where((entry) => entry.reportPeriodId == periodId)
+            .map((entry) => entry.toJson())
+            .toList(),
+      },
+    };
+
+    if (safeFormat == 'json') {
+      await file.writeAsString(
+        const JsonEncoder.withIndent('  ').convert(payload),
+      );
+    } else {
+      final reportText = StringBuffer()
+        ..writeln('# MetaRix Report Export')
+        ..writeln('Workspace: ${_gateway.workspace.name}')
+        ..writeln('Period: ${period.label}')
+        ..writeln('Format: ${format.toUpperCase()}')
+        ..writeln()
+        ..writeln('## Success Snapshot')
+        ..writeln(snapshot.successSnapshot)
+        ..writeln()
+        ..writeln('## Takeaways')
+        ..writeln(
+          snapshot.takeaways
+              .where((entry) => entry.reportPeriodId == periodId)
+              .map((entry) => '- ${entry.title}: ${entry.whatWeLearned}')
+              .join('\n'),
+        )
+        ..writeln()
+        ..writeln('## Future Actions')
+        ..writeln(
+          snapshot.futureActions
+              .where((entry) => entry.reportPeriodId == periodId)
+              .map(
+                (entry) =>
+                    '- ${entry.title} (${entry.actionType.label}) - ${entry.owner}',
+              )
+              .join('\n'),
+        );
+      await file.writeAsString(reportText.toString());
+    }
+
+    _exportStatus = 'Exported ${period.label} to ${file.path}';
+    notifyListeners();
+    await _recordActivity(
+      periodId: periodId,
+      eventType: ActivityEventType.reportGenerated,
+      eventClass: ActivityEventClass.systemAction,
+      reason: 'Report export was generated.',
+      detail: file.path,
+    );
+  }
+
   Future<void> _recordActivity({
     required String periodId,
     required ActivityEventType eventType,
@@ -116,6 +192,17 @@ class ReportController extends ChangeNotifier {
         occurredAt: DateTime.now(),
       ),
     );
+  }
+
+  Future<Directory> _exportDirectory() async {
+    final home = Platform.environment['USERPROFILE'] ??
+        Platform.environment['HOME'] ??
+        Directory.current.path;
+    final directory = Directory('$home\\Documents\\MetaRix\\exports');
+    if (!await directory.exists()) {
+      await directory.create(recursive: true);
+    }
+    return directory;
   }
 
   @override

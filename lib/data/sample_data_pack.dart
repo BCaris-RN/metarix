@@ -17,6 +17,8 @@ import '../features/shared/domain/core_models.dart';
 import '../features/strategy/domain/strategy_models.dart';
 import '../features/workflow/domain/workflow_models.dart';
 import '../metarix_core/models/connector_models.dart';
+import '../metarix_core/models/connected_social_account.dart';
+import '../metarix_core/models/connector_runtime_state.dart';
 import '../metarix_core/models/model_types.dart';
 import '../runtime/activity/activity_event.dart';
 import '../runtime/activity/activity_event_type.dart';
@@ -1057,6 +1059,73 @@ class SampleDataPack {
           reason:
               'Competitor friction spike routed into the opportunity queue.',
           occurredAt: DateTime(2026, 4, 13, 12, 5),
+        ),
+      ],
+      connectedAccounts: const <ConnectedSocialAccount>[
+        ConnectedSocialAccount(
+          platformKey: 'instagram',
+          displayName: 'Summit & Pine',
+          accountHandle: '@summitandpine',
+          status: SocialConnectionStatus.connected,
+          externalAccountId: 'ig_501',
+          profileImageUrl: 'https://cdn.metarix.local/brand/instagram.png',
+          authorUrn: 'urn:ig:business:501',
+          scope: 'instagram_basic instagram_content_publish',
+          connectedAtIso: '2026-04-18T08:00:00Z',
+          lastSyncAtIso: '2026-04-20T06:00:00Z',
+          note: 'Instagram Business account connected for publishing.',
+        ),
+        ConnectedSocialAccount(
+          platformKey: 'facebook',
+          displayName: 'Summit & Pine',
+          accountHandle: '@summitandpine',
+          status: SocialConnectionStatus.connected,
+          externalAccountId: 'fb_401',
+          profileImageUrl: 'https://cdn.metarix.local/brand/facebook.png',
+          authorUrn: 'urn:fb:page:401',
+          scope: 'pages_manage_posts pages_read_engagement',
+          connectedAtIso: '2026-04-18T08:00:00Z',
+          lastSyncAtIso: '2026-04-20T06:00:00Z',
+          note: 'Facebook Page connected for publishing.',
+        ),
+        ConnectedSocialAccount(
+          platformKey: 'linkedin',
+          displayName: 'Summit & Pine',
+          accountHandle: 'Summit & Pine',
+          status: SocialConnectionStatus.connected,
+          externalAccountId: 'li_301',
+          profileImageUrl: 'https://cdn.metarix.local/brand/linkedin.png',
+          authorUrn: 'urn:li:org:301',
+          scope: 'w_member_social openid profile email',
+          connectedAtIso: '2026-04-18T08:00:00Z',
+          lastSyncAtIso: '2026-04-20T06:00:00Z',
+          note: 'LinkedIn organization connected for publishing.',
+        ),
+      ],
+      connectorRuntimeStates: const <ConnectorRuntimeState>[
+        ConnectorRuntimeState(
+          platformKey: 'instagram',
+          availability: ConnectorAvailabilityState.connected,
+          clientIdPresent: true,
+          redirectUriPresent: true,
+          secretPresent: true,
+          note: 'Instagram publishing runtime is connected in local demo mode.',
+        ),
+        ConnectorRuntimeState(
+          platformKey: 'facebook',
+          availability: ConnectorAvailabilityState.connected,
+          clientIdPresent: true,
+          redirectUriPresent: true,
+          secretPresent: true,
+          note: 'Facebook publishing runtime is connected in local demo mode.',
+        ),
+        ConnectorRuntimeState(
+          platformKey: 'linkedin',
+          availability: ConnectorAvailabilityState.connected,
+          clientIdPresent: true,
+          redirectUriPresent: true,
+          secretPresent: true,
+          note: 'LinkedIn publishing runtime is connected in local demo mode.',
         ),
       ],
     );

@@ -163,14 +163,8 @@ fixtures/private/
 # remove it from this ignore list explicitly rather than weakening the whole file.
 
 # === MetaRix local-only proprietary boundaries ===
-# Do not stage, commit, or push these folders unless explicitly approved.
-#/ anchored so this only applies to repo-root folders.
-#/ If these folders ever become tracked, .gitignore alone will not remove them.
-#/ Check git status before any commit.
-#/ When uncertain, treat them as local-only.
-#/ Explicit approval is required before any Git action involving them.
-/caris/
-/phoenix/
+# Local-only runtime boundaries begin below.
+# Check git status before any commit.
 
 # === MetaRix local-only runtime boundary ===
 .env

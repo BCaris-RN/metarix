@@ -79,6 +79,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   label: const Text('Generate Report'),
                 ),
                 const SizedBox(width: 12),
+                FilledButton.tonalIcon(
+                  onPressed: () => controller.exportReport(activePeriodId, 'json'),
+                  icon: const Icon(Icons.data_object_outlined),
+                  label: const Text('Export JSON'),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: () => controller.exportReport(activePeriodId, 'txt'),
+                  icon: const Icon(Icons.description_outlined),
+                  label: const Text('Export TXT'),
+                ),
+                const SizedBox(width: 12),
                 DropdownButton<String>(
                   value: activePeriodId,
                   items: snapshot.reportPeriods
@@ -96,6 +108,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   },
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.file_present_outlined),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(controller.exportStatus)),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             Wrap(

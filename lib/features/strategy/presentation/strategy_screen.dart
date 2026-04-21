@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/metarix_scope.dart';
 import '../../shared/domain/core_models.dart';
+import '../../shared/domain/signal_summary.dart';
 import '../application/strategy_controller.dart';
 import '../domain/strategy_models.dart';
 
@@ -12,11 +13,23 @@ class StrategyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final services = MetarixScope.of(context);
     final controller = services.strategyController;
+    final reportController = services.reportController;
+    final listeningController = services.listeningController;
 
     return AnimatedBuilder(
-      animation: controller,
+      animation: Listenable.merge([
+        controller,
+        reportController,
+        listeningController,
+      ]),
       builder: (context, _) {
         final strategy = controller.strategy;
+        final reportSnapshot = reportController.snapshot;
+        final analyticsSignal = reportSnapshot.signalSummaryFor(
+          reportSnapshot.activePeriodId,
+        );
+        final listeningSignal =
+            listeningController.snapshot.workspaceSignalSummary;
         return ListView(
           padding: const EdgeInsets.all(24),
           children: [
@@ -30,6 +43,16 @@ class StrategyScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 20),
+            Text(
+              'Workspace signal',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 12),
+            _WorkspaceSignalSummaryStrip(
+              analyticsSignal: analyticsSignal,
+              listeningSignal: listeningSignal,
+            ),
+            const SizedBox(height: 24),
             Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -66,7 +89,9 @@ class StrategyScreen extends StatelessWidget {
               child: Column(
                 children: strategy.businessGoals.map((goal) {
                   final linkedGoals = strategy.socialGoals
-                      .where((socialGoal) => socialGoal.businessGoalId == goal.id)
+                      .where(
+                        (socialGoal) => socialGoal.businessGoalId == goal.id,
+                      )
                       .toList();
                   return ListTile(
                     title: Text(goal.title),
@@ -76,7 +101,8 @@ class StrategyScreen extends StatelessWidget {
                     isThreeLine: true,
                     trailing: IconButton(
                       icon: const Icon(Icons.edit_outlined),
-                      onPressed: () => _showGoalDialog(context, controller, goal),
+                      onPressed: () =>
+                          _showGoalDialog(context, controller, goal),
                     ),
                   );
                 }).toList(),
@@ -92,9 +118,7 @@ class StrategyScreen extends StatelessWidget {
                     .map(
                       (persona) => ListTile(
                         title: Text(persona.name),
-                        subtitle: Text(
-                          '${persona.role}\n${persona.summary}',
-                        ),
+                        subtitle: Text('${persona.role}\n${persona.summary}'),
                         isThreeLine: true,
                         trailing: IconButton(
                           icon: const Icon(Icons.edit_outlined),
@@ -220,18 +244,26 @@ class StrategyScreen extends StatelessWidget {
               type: SocialGoalType.awareness,
               summary: '',
               metricTargets: const [
-                MetricTarget(metricName: 'reach', targetValue: 0, unit: 'count'),
+                MetricTarget(
+                  metricName: 'reach',
+                  targetValue: 0,
+                  unit: 'count',
+                ),
               ],
             ),
           );
     final titleController = TextEditingController(text: existing?.title ?? '');
-    final summaryController = TextEditingController(text: existing?.summary ?? '');
-    final socialSummaryController =
-        TextEditingController(text: linkedSocialGoal?.summary ?? '');
+    final summaryController = TextEditingController(
+      text: existing?.summary ?? '',
+    );
+    final socialSummaryController = TextEditingController(
+      text: linkedSocialGoal?.summary ?? '',
+    );
     final metricController = TextEditingController(
       text: linkedSocialGoal?.metricTargets.first.metricName ?? 'reach',
     );
-    SocialGoalType selectedType = linkedSocialGoal?.type ?? SocialGoalType.awareness;
+    SocialGoalType selectedType =
+        linkedSocialGoal?.type ?? SocialGoalType.awareness;
 
     final saved = await showDialog<bool>(
       context: context,
@@ -269,11 +301,15 @@ class StrategyScreen extends StatelessWidget {
                 ),
                 TextField(
                   controller: socialSummaryController,
-                  decoration: const InputDecoration(labelText: 'Social goal summary'),
+                  decoration: const InputDecoration(
+                    labelText: 'Social goal summary',
+                  ),
                 ),
                 TextField(
                   controller: metricController,
-                  decoration: const InputDecoration(labelText: 'Primary metric'),
+                  decoration: const InputDecoration(
+                    labelText: 'Primary metric',
+                  ),
                 ),
               ],
             ),
@@ -303,7 +339,9 @@ class StrategyScreen extends StatelessWidget {
         brandId: services.gateway.brand.id,
         title: titleController.text,
         summary: summaryController.text,
-        socialGoalIds: [linkedSocialGoal?.id ?? services.gateway.createId('social-goal')],
+        socialGoalIds: [
+          linkedSocialGoal?.id ?? services.gateway.createId('social-goal'),
+        ],
       ),
       SocialGoal(
         id: linkedSocialGoal?.id ?? services.gateway.createId('social-goal'),
@@ -329,23 +367,36 @@ class StrategyScreen extends StatelessWidget {
     final services = MetarixScope.of(context);
     final nameController = TextEditingController(text: existing?.name ?? '');
     final roleController = TextEditingController(text: existing?.role ?? '');
-    final summaryController = TextEditingController(text: existing?.summary ?? '');
-    final goalsController =
-        TextEditingController(text: existing?.goals.join(', ') ?? '');
-    final painPointsController =
-        TextEditingController(text: existing?.painPoints.join(', ') ?? '');
+    final summaryController = TextEditingController(
+      text: existing?.summary ?? '',
+    );
+    final goalsController = TextEditingController(
+      text: existing?.goals.join(', ') ?? '',
+    );
+    final painPointsController = TextEditingController(
+      text: existing?.painPoints.join(', ') ?? '',
+    );
     final channelsController = TextEditingController(
-      text: existing?.preferredNetworks.map((entry) => entry.name).join(', ') ?? '',
+      text:
+          existing?.preferredNetworks.map((entry) => entry.name).join(', ') ??
+          '',
     );
 
-    final saved = await _showSimpleDialog(context, existing == null ? 'New persona' : 'Edit persona', [
-      _DialogField(nameController, 'Name'),
-      _DialogField(roleController, 'Role'),
-      _DialogField(summaryController, 'Summary'),
-      _DialogField(goalsController, 'Goals (comma separated)'),
-      _DialogField(painPointsController, 'Pain points (comma separated)'),
-      _DialogField(channelsController, 'Networks (comma separated enum names)'),
-    ]);
+    final saved = await _showSimpleDialog(
+      context,
+      existing == null ? 'New persona' : 'Edit persona',
+      [
+        _DialogField(nameController, 'Name'),
+        _DialogField(roleController, 'Role'),
+        _DialogField(summaryController, 'Summary'),
+        _DialogField(goalsController, 'Goals (comma separated)'),
+        _DialogField(painPointsController, 'Pain points (comma separated)'),
+        _DialogField(
+          channelsController,
+          'Networks (comma separated enum names)',
+        ),
+      ],
+    );
     if (!saved) {
       return;
     }
@@ -373,13 +424,21 @@ class StrategyScreen extends StatelessWidget {
     final nameController = TextEditingController(text: existing?.name ?? '');
     final notesController = TextEditingController(text: existing?.notes ?? '');
     final channelsController = TextEditingController(
-      text: existing?.primaryChannels.map((entry) => entry.name).join(', ') ?? '',
+      text:
+          existing?.primaryChannels.map((entry) => entry.name).join(', ') ?? '',
     );
-    final saved = await _showSimpleDialog(context, existing == null ? 'New competitor' : 'Edit competitor', [
-      _DialogField(nameController, 'Name'),
-      _DialogField(channelsController, 'Channels (comma separated enum names)'),
-      _DialogField(notesController, 'Notes'),
-    ]);
+    final saved = await _showSimpleDialog(
+      context,
+      existing == null ? 'New competitor' : 'Edit competitor',
+      [
+        _DialogField(nameController, 'Name'),
+        _DialogField(
+          channelsController,
+          'Channels (comma separated enum names)',
+        ),
+        _DialogField(notesController, 'Notes'),
+      ],
+    );
     if (!saved) {
       return;
     }
@@ -401,17 +460,23 @@ class StrategyScreen extends StatelessWidget {
   ) async {
     final services = MetarixScope.of(context);
     final nameController = TextEditingController(text: existing?.name ?? '');
-    final descriptionController =
-        TextEditingController(text: existing?.description ?? '');
-    final metricController =
-        TextEditingController(text: existing?.targetMetric ?? '');
+    final descriptionController = TextEditingController(
+      text: existing?.description ?? '',
+    );
+    final metricController = TextEditingController(
+      text: existing?.targetMetric ?? '',
+    );
     final toneController = TextEditingController(text: existing?.tone ?? '');
-    final saved = await _showSimpleDialog(context, existing == null ? 'New pillar' : 'Edit pillar', [
-      _DialogField(nameController, 'Name'),
-      _DialogField(descriptionController, 'Description'),
-      _DialogField(metricController, 'Target metric'),
-      _DialogField(toneController, 'Tone'),
-    ]);
+    final saved = await _showSimpleDialog(
+      context,
+      existing == null ? 'New pillar' : 'Edit pillar',
+      [
+        _DialogField(nameController, 'Name'),
+        _DialogField(descriptionController, 'Description'),
+        _DialogField(metricController, 'Target metric'),
+        _DialogField(toneController, 'Tone'),
+      ],
+    );
     if (!saved) {
       return;
     }
@@ -499,14 +564,21 @@ class StrategyScreen extends StatelessWidget {
   ) async {
     final services = MetarixScope.of(context);
     final titleController = TextEditingController(text: existing?.title ?? '');
-    final observationController =
-        TextEditingController(text: existing?.observation ?? '');
-    final impactController = TextEditingController(text: existing?.impact ?? '');
-    final saved = await _showSimpleDialog(context, existing == null ? 'New audit note' : 'Edit audit note', [
-      _DialogField(titleController, 'Title'),
-      _DialogField(observationController, 'Observation'),
-      _DialogField(impactController, 'Impact'),
-    ]);
+    final observationController = TextEditingController(
+      text: existing?.observation ?? '',
+    );
+    final impactController = TextEditingController(
+      text: existing?.impact ?? '',
+    );
+    final saved = await _showSimpleDialog(
+      context,
+      existing == null ? 'New audit note' : 'Edit audit note',
+      [
+        _DialogField(titleController, 'Title'),
+        _DialogField(observationController, 'Observation'),
+        _DialogField(impactController, 'Impact'),
+      ],
+    );
     if (!saved) {
       return;
     }
@@ -579,19 +651,93 @@ class _DialogField {
   final String label;
 }
 
+class _WorkspaceSignalSummaryStrip extends StatelessWidget {
+  const _WorkspaceSignalSummaryStrip({
+    required this.analyticsSignal,
+    required this.listeningSignal,
+  });
+
+  final SignalSummary analyticsSignal;
+  final SignalSummary listeningSignal;
+
+  @override
+  Widget build(BuildContext context) {
+    final engagement = analyticsSignal.engagement;
+    final topContent = analyticsSignal.topContentUnits.isEmpty
+        ? null
+        : analyticsSignal.topContentUnits.first;
+    final analyticsSentiment = analyticsSignal.sentimentBucket;
+    final mentionWatch = listeningSignal.mentionWatch;
+    final listeningSentiment = listeningSignal.sentimentBucket;
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        _SummaryCard(
+          label: 'Engagement summary',
+          value: engagement == null
+              ? 'No engagement summary'
+              : '${engagement.totalEngagements} engagements across ${engagement.topChannelLabel}',
+          detail: engagement == null
+              ? null
+              : 'Compared with ${engagement.comparisonLabel}: ${engagement.comparisonDelta >= 0 ? '+' : ''}${engagement.comparisonDelta}',
+          width: 260,
+        ),
+        _SummaryCard(
+          label: 'Top content unit',
+          value: topContent?.title ?? 'No linked content unit',
+          detail: topContent == null
+              ? null
+              : '${topContent.channelLabel} | ${topContent.statusLabel}',
+          width: 240,
+        ),
+        _SummaryCard(
+          label: 'Mention watch',
+          value: mentionWatch == null
+              ? 'No active watch signal'
+              : '${mentionWatch.mentionCount} mentions / ${mentionWatch.spikeCount} spikes',
+          detail: mentionWatch?.topWatchLabel,
+          width: 240,
+        ),
+        _SummaryCard(
+          label: 'Analytics sentiment',
+          value: analyticsSentiment == null
+              ? 'No sentiment bucket'
+              : '${analyticsSentiment.label} (${analyticsSentiment.count})',
+          detail: analyticsSentiment?.description,
+          width: 220,
+        ),
+        _SummaryCard(
+          label: 'Listening sentiment',
+          value: listeningSentiment == null
+              ? 'No sentiment bucket'
+              : '${listeningSentiment.label} (${listeningSentiment.count})',
+          detail: listeningSentiment?.description,
+          width: 220,
+        ),
+      ],
+    );
+  }
+}
+
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
     required this.label,
     required this.value,
+    this.detail,
+    this.width = 180,
   });
 
   final String label;
   final String value;
+  final String? detail;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 180,
+      width: width,
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -601,6 +747,10 @@ class _SummaryCard extends StatelessWidget {
               Text(label),
               const SizedBox(height: 8),
               Text(value, style: Theme.of(context).textTheme.headlineSmall),
+              if (detail != null) ...[
+                const SizedBox(height: 8),
+                Text(detail!, style: Theme.of(context).textTheme.bodySmall),
+              ],
             ],
           ),
         ),
@@ -633,7 +783,10 @@ class _SectionFrame extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                 ),
                 TextButton.icon(
                   onPressed: onAction,

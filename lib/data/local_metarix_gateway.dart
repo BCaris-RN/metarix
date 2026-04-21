@@ -18,12 +18,13 @@ import '../features/reports/domain/normalized_metric_record.dart';
 import '../features/reports/domain/report_models.dart';
 import '../features/schedule/domain/schedule_models.dart';
 import '../features/shared/domain/core_models.dart';
-import '../features/shared/application/analytics_signal_service.dart';
-import '../features/shared/application/listening_signal_service.dart';
 import '../features/strategy/domain/strategy_models.dart';
 import '../features/workflow/domain/workflow_models.dart';
 import '../features/exports/domain/export_artifact.dart';
 import '../metarix_core/models/connector_models.dart';
+import '../metarix_core/models/connected_social_account.dart';
+import '../metarix_core/models/connector_runtime_state.dart';
+import '../metarix_core/models/linkedin_auth_record.dart';
 import '../repositories/approval_repository.dart';
 import '../repositories/campaign_repository.dart';
 import '../repositories/conversation_repository.dart';
@@ -37,6 +38,8 @@ import '../repositories/workspace_repository.dart';
 import '../runtime/activity/activity_event.dart';
 import '../runtime/activity/activity_event_type.dart';
 import '../runtime/activity/activity_ledger_repository.dart';
+import '../services/linkedin/linkedin_auth_session.dart';
+import '../services/signal_summary_service.dart';
 import 'local_storage_adapter.dart';
 import 'metarix_snapshot.dart';
 import 'sample_data_pack.dart';
@@ -60,6 +63,8 @@ class LocalMetarixGateway extends ChangeNotifier
 
   final LocalStorageAdapter _storage;
   MetarixSnapshot _snapshot;
+  final SignalSummaryService _signalSummaryService =
+      const SignalSummaryService();
 
   static Future<LocalMetarixGateway> bootstrap() async {
     final storage = await LocalStorageAdapter.create();
@@ -89,8 +94,90 @@ class LocalMetarixGateway extends ChangeNotifier
 
   UserRole get currentUserRole => currentMembership.role;
 
+  List<ConnectedSocialAccount> get connectedAccounts =>
+      _snapshot.connectedAccounts;
+
+  List<ConnectorRuntimeState> get connectorRuntimeStates =>
+      _snapshot.connectorRuntimeStates;
+
+  LinkedInAuthSession? get pendingLinkedInAuthSession =>
+      _snapshot.pendingLinkedInAuthSession;
+
+  List<LinkedInAuthRecord> get linkedInAuthRecords =>
+      _snapshot.linkedInAuthRecords;
+
+  ConnectedSocialAccount? connectedAccountFor(String platformKey) {
+    for (final account in _snapshot.connectedAccounts) {
+      if (account.platformKey == platformKey) {
+        return account;
+      }
+    }
+    return null;
+  }
+
+  ConnectorRuntimeState? connectorRuntimeStateFor(String platformKey) {
+    for (final state in _snapshot.connectorRuntimeStates) {
+      if (state.platformKey == platformKey) {
+        return state;
+      }
+    }
+    return null;
+  }
+
   Future<void> switchUser(String userId) async {
     await _replaceSnapshot(_snapshot.copyWith(currentUserId: userId));
+  }
+
+  Future<void> saveConnectedSocialAccount(
+    ConnectedSocialAccount account,
+  ) async {
+    await _replaceSnapshot(
+      _snapshot.copyWith(
+        connectedAccounts: _upsert(
+          _snapshot.connectedAccounts,
+          account,
+          (entry) => entry.platformKey,
+        ),
+      ),
+    );
+  }
+
+  Future<void> saveConnectorRuntimeState(ConnectorRuntimeState state) async {
+    await _replaceSnapshot(
+      _snapshot.copyWith(
+        connectorRuntimeStates: _upsert(
+          _snapshot.connectorRuntimeStates,
+          state,
+          (entry) => entry.platformKey,
+        ),
+      ),
+    );
+  }
+
+  Future<void> savePendingLinkedInAuthSession(
+    LinkedInAuthSession session,
+  ) async {
+    await _replaceSnapshot(
+      _snapshot.copyWith(pendingLinkedInAuthSession: session),
+    );
+  }
+
+  Future<void> clearPendingLinkedInAuthSession() async {
+    await _replaceSnapshot(
+      _snapshot.copyWith(clearPendingLinkedInAuthSession: true),
+    );
+  }
+
+  Future<void> saveLinkedInAuthRecord(LinkedInAuthRecord record) async {
+    await _replaceSnapshot(
+      _snapshot.copyWith(
+        linkedInAuthRecords: _upsert(
+          _snapshot.linkedInAuthRecords,
+          record,
+          (entry) => entry.platformKey,
+        ),
+      ),
+    );
   }
 
   Future<void> resetDemo() async {
@@ -115,8 +202,10 @@ class LocalMetarixGateway extends ChangeNotifier
 
   ReportSnapshot loadReportDataSync() {
     final channelPerformance = _buildChannelPerformance();
-    final analyticsSignals = AnalyticsSignalService(this);
     final reportPeriods = _snapshot.reportPeriods;
+    final signalSummaries = _signalSummaryService.buildReportSignalSummaries(
+      _snapshot,
+    );
     return ReportSnapshot(
       activePeriodId: reportPeriods.first.id,
       reportPeriods: reportPeriods,
@@ -129,11 +218,11 @@ class LocalMetarixGateway extends ChangeNotifier
       futureActions: _snapshot.futureActions,
       recommendationInsights: _snapshot.recommendationInsights,
       successSnapshot: _snapshot.successSnapshot,
-      topPostPlaceholder: _snapshot.topPostPlaceholder,
-      signalSummaries: {
-        for (final period in reportPeriods)
-          period.id: analyticsSignals.signalForPeriod(period.id),
-      },
+      topPostPlaceholder: _signalSummaryService.buildTopContentPlaceholder(
+        activePeriodId: reportPeriods.first.id,
+        signalSummaries: signalSummaries,
+      ),
+      signalSummaries: signalSummaries,
     );
   }
 
@@ -718,7 +807,12 @@ class LocalMetarixGateway extends ChangeNotifier
 
   @override
   Future<ListeningSnapshot> loadListeningSnapshot() async {
-    final listeningSignals = ListeningSignalService(this);
+    return loadListeningSnapshotSync();
+  }
+
+  ListeningSnapshot loadListeningSnapshotSync() {
+    final listeningSignals = _signalSummaryService
+        .buildListeningSignalSummaries(_snapshot);
     return ListeningSnapshot(
       queries: _snapshot.listeningQueries,
       mentions: _snapshot.mentions,
@@ -728,11 +822,8 @@ class LocalMetarixGateway extends ChangeNotifier
       alertRules: _snapshot.listeningAlertRules,
       competitorWatch: _snapshot.competitorWatch,
       sentimentSummary: _snapshot.sentimentSummary,
-      workspaceSignalSummary: listeningSignals.workspaceSignal(),
-      querySignalSummaries: {
-        for (final query in _snapshot.listeningQueries)
-          query.id: listeningSignals.signalForQuery(query.id),
-      },
+      workspaceSignalSummary: listeningSignals.workspaceSignalSummary,
+      querySignalSummaries: listeningSignals.querySignalSummaries,
     );
   }
 

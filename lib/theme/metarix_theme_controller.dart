@@ -9,7 +9,7 @@ class MetarixThemeController extends ChangeNotifier {
   MetarixThemeController({MetarixThemeConfig? initialConfig})
     : _config =
           initialConfig ??
-          MetarixThemeConfig.forPreset(MetarixThemePreset.codexSignature);
+          MetarixThemeConfig.forPreset(MetarixThemePreset.metarixLight);
 
   MetarixThemeConfig _config;
 

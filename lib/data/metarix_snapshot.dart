@@ -16,8 +16,12 @@ import '../features/shared/domain/core_models.dart';
 import '../features/strategy/domain/strategy_models.dart';
 import '../features/workflow/domain/workflow_models.dart';
 import '../metarix_core/models/connector_models.dart';
+import '../metarix_core/models/connected_social_account.dart';
+import '../metarix_core/models/connector_runtime_state.dart';
+import '../metarix_core/models/linkedin_auth_record.dart';
 import '../features/exports/domain/export_artifact.dart';
 import '../runtime/activity/activity_event.dart';
+import '../services/linkedin/linkedin_auth_session.dart';
 
 class MetarixSnapshot {
   const MetarixSnapshot({
@@ -65,6 +69,10 @@ class MetarixSnapshot {
     required this.sentimentSummary,
     required this.exportArtifacts,
     required this.activityEvents,
+    this.connectedAccounts = const <ConnectedSocialAccount>[],
+    this.connectorRuntimeStates = const <ConnectorRuntimeState>[],
+    this.pendingLinkedInAuthSession,
+    this.linkedInAuthRecords = const <LinkedInAuthRecord>[],
   });
 
   final Workspace workspace;
@@ -111,6 +119,10 @@ class MetarixSnapshot {
   final SentimentSummary sentimentSummary;
   final List<ExportArtifact> exportArtifacts;
   final List<ActivityEvent> activityEvents;
+  final List<ConnectedSocialAccount> connectedAccounts;
+  final List<ConnectorRuntimeState> connectorRuntimeStates;
+  final LinkedInAuthSession? pendingLinkedInAuthSession;
+  final List<LinkedInAuthRecord> linkedInAuthRecords;
 
   MetarixSnapshot copyWith({
     Workspace? workspace,
@@ -157,6 +169,11 @@ class MetarixSnapshot {
     SentimentSummary? sentimentSummary,
     List<ExportArtifact>? exportArtifacts,
     List<ActivityEvent>? activityEvents,
+    List<ConnectedSocialAccount>? connectedAccounts,
+    List<ConnectorRuntimeState>? connectorRuntimeStates,
+    LinkedInAuthSession? pendingLinkedInAuthSession,
+    bool clearPendingLinkedInAuthSession = false,
+    List<LinkedInAuthRecord>? linkedInAuthRecords,
   }) {
     return MetarixSnapshot(
       workspace: workspace ?? this.workspace,
@@ -206,6 +223,13 @@ class MetarixSnapshot {
       sentimentSummary: sentimentSummary ?? this.sentimentSummary,
       exportArtifacts: exportArtifacts ?? this.exportArtifacts,
       activityEvents: activityEvents ?? this.activityEvents,
+      connectedAccounts: connectedAccounts ?? this.connectedAccounts,
+      connectorRuntimeStates:
+          connectorRuntimeStates ?? this.connectorRuntimeStates,
+      pendingLinkedInAuthSession: clearPendingLinkedInAuthSession
+          ? null
+          : pendingLinkedInAuthSession ?? this.pendingLinkedInAuthSession,
+      linkedInAuthRecords: linkedInAuthRecords ?? this.linkedInAuthRecords,
     );
   }
 
@@ -276,6 +300,16 @@ class MetarixSnapshot {
     'sentimentSummary': sentimentSummary.toJson(),
     'exportArtifacts': exportArtifacts.map((entry) => entry.toJson()).toList(),
     'activityEvents': activityEvents.map((entry) => entry.toJson()).toList(),
+    'connectedAccounts': connectedAccounts
+        .map((entry) => entry.toJson())
+        .toList(),
+    'connectorRuntimeStates': connectorRuntimeStates
+        .map((entry) => entry.toJson())
+        .toList(),
+    'pendingLinkedInAuthSession': pendingLinkedInAuthSession?.toJson(),
+    'linkedInAuthRecords': linkedInAuthRecords
+        .map((entry) => entry.toJson())
+        .toList(),
   };
 
   factory MetarixSnapshot.fromJson(Map<String, dynamic> json) {
@@ -343,6 +377,41 @@ class MetarixSnapshot {
     final conversationMessages = json['conversationMessages'] == null
         ? const <ConversationMessage>[]
         : _mapList(json['conversationMessages'], ConversationMessage.fromJson);
+    final connectedAccounts =
+        (json['connectedAccounts'] as List<dynamic>? ?? const <dynamic>[])
+            .whereType<Map>()
+            .map(
+              (item) => ConnectedSocialAccount.fromJson(
+                Map<String, Object?>.from(item),
+              ),
+            )
+            .toList(growable: false);
+    final connectorRuntimeStates =
+        (json['connectorRuntimeStates'] as List<dynamic>? ?? const <dynamic>[])
+            .whereType<Map>()
+            .map(
+              (item) => ConnectorRuntimeState.fromJson(
+                Map<String, Object?>.from(item),
+              ),
+            )
+            .toList(growable: false);
+    final pendingLinkedInAuthSession =
+        json['pendingLinkedInAuthSession'] == null
+            ? null
+            : LinkedInAuthSession.fromJson(
+                Map<String, Object?>.from(
+                  json['pendingLinkedInAuthSession'] as Map,
+                ),
+              );
+    final linkedInAuthRecords =
+        (json['linkedInAuthRecords'] as List<dynamic>? ?? const <dynamic>[])
+            .whereType<Map>()
+            .map(
+              (item) => LinkedInAuthRecord.fromJson(
+                Map<String, Object?>.from(item),
+              ),
+            )
+            .toList(growable: false);
 
     return MetarixSnapshot(
       workspace: workspace,
@@ -426,6 +495,10 @@ class MetarixSnapshot {
         json['activityEvents'] ?? const <dynamic>[],
         ActivityEvent.fromJson,
       ),
+      connectedAccounts: connectedAccounts,
+      connectorRuntimeStates: connectorRuntimeStates,
+      pendingLinkedInAuthSession: pendingLinkedInAuthSession,
+      linkedInAuthRecords: linkedInAuthRecords,
     );
   }
 

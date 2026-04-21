@@ -1,20 +1,19 @@
 import 'package:flutter/foundation.dart';
 
-import '../../data/metarix_snapshot.dart';
-import '../../data/sample_data_pack.dart';
-import '../../features/shared/domain/core_models.dart';
+import '../shared/domain/core_models.dart';
+import '../shared/domain/signal_summary.dart';
+import 'domain/report_models.dart';
 import '../../metarix_core/models/model_types.dart';
 import 'report_section.dart';
 
 enum ReportExportFormat { pdf, ppt, json }
 
 class ReportController extends ChangeNotifier {
-  ReportController({MetarixSnapshot? snapshot})
-    : _snapshot = snapshot ?? SampleDataPack.initialSnapshot() {
+  ReportController({required ReportSnapshot snapshot}) : _snapshot = snapshot {
     _rebuildAssembly();
   }
 
-  final MetarixSnapshot _snapshot;
+  final ReportSnapshot _snapshot;
   late ReportAssembly _assembly;
   String _exportStatus = 'Export not started.';
 
@@ -29,25 +28,32 @@ class ReportController extends ChangeNotifier {
   }
 
   void _rebuildAssembly() {
-    final sortedSignals = List.of(_snapshot.channelPerformance)
-      ..sort((left, right) => right.engagements.compareTo(left.engagements));
-    final strongest = sortedSignals.isEmpty ? null : sortedSignals.first;
-    final totalImpressions = _snapshot.channelPerformance.fold<int>(
-      0,
-      (sum, entry) => sum + entry.impressions,
-    );
-    final totalReach = _snapshot.channelPerformance.fold<int>(
-      0,
-      (sum, entry) => sum + entry.reach,
-    );
-    final totalEngagements = _snapshot.channelPerformance.fold<int>(
-      0,
-      (sum, entry) => sum + entry.engagements,
-    );
-    final totalClicks = _snapshot.channelPerformance.fold<int>(
-      0,
-      (sum, entry) => sum + entry.clicks,
-    );
+    final activePeriodId = _snapshot.activePeriodId;
+    final signalSummary = _snapshot.signalSummaryFor(activePeriodId);
+    final engagement = signalSummary.engagement;
+    final sortedSignals =
+        _snapshot.channelPerformance
+            .where((entry) => entry.reportPeriodId == activePeriodId)
+            .toList()
+          ..sort(
+            (left, right) => right.engagements.compareTo(left.engagements),
+          );
+    final comparisonPeriodId =
+        _snapshot.comparisonPeriods[activePeriodId] ?? activePeriodId;
+    final comparisonByChannel = {
+      for (final record in _snapshot.channelPerformance.where(
+        (entry) => entry.reportPeriodId == comparisonPeriodId,
+      ))
+        record.channel: record,
+    };
+    final topContentByChannel = <String, TopContentUnitSummary>{
+      for (final entry in signalSummary.topContentUnits)
+        entry.channelLabel: entry,
+    };
+    final totalEngagements = engagement?.totalEngagements ?? 0;
+    final previousEngagements = engagement == null
+        ? 0
+        : totalEngagements - engagement.comparisonDelta;
 
     _assembly = ReportAssembly(
       sectionOrder: const [
@@ -58,19 +64,17 @@ class ReportController extends ChangeNotifier {
         ReportSection.futureStrategy,
       ],
       successSnapshot: SuccessSnapshot(
-        headline: strongest == null
+        headline: engagement == null
             ? 'No reporting signal available.'
-            : '${strongest.channel.label} led the current signal window with ${strongest.engagements} engagements.',
-        totalImpressions: totalImpressions,
-        totalReach: totalReach,
+            : '${engagement.topChannelLabel} led the current signal window with ${engagement.totalEngagements} engagements.',
+        totalImpressions: engagement?.totalImpressions ?? 0,
+        totalReach: engagement?.totalReach ?? 0,
         totalEngagements: totalEngagements,
-        totalClicks: totalClicks,
+        totalClicks: engagement?.totalClicks ?? 0,
         totalFollowerDelta: 0,
-        engagementComparison: PeriodComparison(
-          currentValue: totalEngagements,
-          previousValue: 0,
-          deltaValue: totalEngagements,
-          deltaPercent: 0,
+        engagementComparison: _comparison(
+          totalEngagements,
+          previousEngagements,
         ),
       ),
       platformSummaries: sortedSignals
@@ -83,17 +87,14 @@ class ReportController extends ChangeNotifier {
               clicks: entry.clicks,
               followerDelta: 0,
               videoViews: 0,
-              topContent: TopPerformingContent(
-                contentId: _contentTitleForChannel(entry.channel),
-                engagements: entry.engagements,
-                impressions: entry.impressions,
-                clicks: entry.clicks,
+              topContent: _topContentFor(
+                entry.channel,
+                topContentByChannel,
+                entry.impressions,
               ),
-              engagementComparison: PeriodComparison(
-                currentValue: entry.engagements,
-                previousValue: 0,
-                deltaValue: entry.engagements,
-                deltaPercent: 0,
+              engagementComparison: _comparison(
+                entry.engagements,
+                comparisonByChannel[entry.channel]?.engagements ?? 0,
               ),
             ),
           )
@@ -145,19 +146,33 @@ class ReportController extends ChangeNotifier {
     return SocialPlatform.tiktok;
   }
 
-  String _contentTitleForChannel(SocialChannel channel) {
-    final scheduled = _snapshot.scheduledPosts.where(
-      (entry) => entry.channel == channel,
-    );
-    if (scheduled.isNotEmpty) {
-      return scheduled.first.title;
+  TopPerformingContent? _topContentFor(
+    SocialChannel channel,
+    Map<String, TopContentUnitSummary> topContentByChannel,
+    int impressions,
+  ) {
+    final topContent = topContentByChannel[channel.label];
+    if (topContent == null) {
+      return null;
     }
-    final draft = _snapshot.drafts.where(
-      (entry) => entry.targetNetwork == channel,
+    return TopPerformingContent(
+      contentId: topContent.title,
+      engagements: topContent.engagements,
+      impressions: impressions,
+      clicks: topContent.clicks,
     );
-    if (draft.isNotEmpty) {
-      return draft.first.title;
-    }
-    return '${channel.label} content unit';
+  }
+
+  PeriodComparison _comparison(int currentValue, int previousValue) {
+    final deltaValue = currentValue - previousValue;
+    final deltaPercent = previousValue == 0
+        ? 0.0
+        : (deltaValue / previousValue) * 100;
+    return PeriodComparison(
+      currentValue: currentValue,
+      previousValue: previousValue,
+      deltaValue: deltaValue,
+      deltaPercent: deltaPercent,
+    );
   }
 }

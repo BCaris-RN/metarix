@@ -8,40 +8,17 @@ import 'report_section.dart';
 import 'standout_results_panel.dart';
 import 'success_snapshot_card.dart';
 
-class ReportScreen extends StatefulWidget {
-  const ReportScreen({super.key, this.controller});
+class ReportScreen extends StatelessWidget {
+  const ReportScreen({super.key, required this.controller});
 
-  final ReportController? controller;
-
-  @override
-  State<ReportScreen> createState() => _ReportScreenState();
-}
-
-class _ReportScreenState extends State<ReportScreen> {
-  late final ReportController _controller;
-  late final bool _ownsController;
-
-  @override
-  void initState() {
-    super.initState();
-    _ownsController = widget.controller == null;
-    _controller = widget.controller ?? ReportController();
-  }
-
-  @override
-  void dispose() {
-    if (_ownsController) {
-      _controller.dispose();
-    }
-    super.dispose();
-  }
+  final ReportController controller;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _controller,
+      animation: controller,
       builder: (context, _) {
-        final assembly = _controller.assembly;
+        final assembly = controller.assembly;
         return Scaffold(
           body: ListView(
             padding: const EdgeInsets.all(24),
@@ -56,19 +33,19 @@ class _ReportScreenState extends State<ReportScreen> {
                   ),
                   FilledButton(
                     onPressed: () =>
-                        _controller.exportReport(ReportExportFormat.pdf),
+                        controller.exportReport(ReportExportFormat.pdf),
                     child: const Text('Export PDF'),
                   ),
                   const SizedBox(width: 8),
                   OutlinedButton(
                     onPressed: () =>
-                        _controller.exportReport(ReportExportFormat.ppt),
+                        controller.exportReport(ReportExportFormat.ppt),
                     child: const Text('Export PPT'),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(_controller.exportStatus),
+              Text(controller.exportStatus),
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,

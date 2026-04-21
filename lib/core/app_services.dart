@@ -24,9 +24,15 @@ import '../features/strategy/application/strategy_controller.dart';
 import '../features/workflow/application/workflow_controller.dart';
 import '../metarix_core/connectors/connector_bundle.dart';
 import '../metarix_core/connectors/demo/demo_connector_bundle.dart';
+import '../metarix_core/models/connected_social_account.dart';
+import '../metarix_core/models/model_types.dart';
 import '../runtime/jobs/job_queue_service.dart';
 import '../services/access_control_service.dart';
+import '../services/backend_api_service.dart';
 import '../services/caris_policy_service.dart';
+import '../services/linkedin/linkedin_connection_service.dart';
+import '../services/linkedin/linkedin_auth_service.dart';
+import '../services/linkedin/linkedin_token_exchange_service.dart';
 import '../services/workflow_services.dart';
 import 'backend_config.dart';
 import 'config/environment_config.dart';
@@ -45,8 +51,11 @@ class AppServices {
     required this.backendConnectors,
     required this.metricNormalizer,
     required this.recommendationEngine,
+    required this.linkedInAuthService,
+    required this.linkedInConnectionService,
     required this.exportService,
     required this.globalSearchService,
+    required this.backendApiService,
     required this.jobQueueService,
     required this.activityController,
     required this.assetLibraryController,
@@ -72,8 +81,11 @@ class AppServices {
   final ConnectorBundle backendConnectors;
   final MetricNormalizer metricNormalizer;
   final RecommendationEngine recommendationEngine;
+  final LinkedInAuthService linkedInAuthService;
+  final LinkedInConnectionService linkedInConnectionService;
   final ExportService exportService;
   final GlobalSearchService globalSearchService;
+  final BackendApiService backendApiService;
   final JobQueueService jobQueueService;
   final ActivityController activityController;
   final AssetLibraryController assetLibraryController;
@@ -88,11 +100,23 @@ class AppServices {
   final AdminController adminController;
   bool _disposed = false;
 
-  static Future<AppServices> bootstrap() async {
-    final backendConfig = BackendConfig.fromEnvironment();
+  static Future<AppServices> bootstrap({
+    BackendConfig? backendConfigOverride,
+    LinkedInAuthService? linkedInAuthServiceOverride,
+    LinkedInTokenExchangeService? linkedInTokenExchangeServiceOverride,
+  }) async {
+    final backendConfig =
+        backendConfigOverride ?? BackendConfig.fromEnvironment();
     final environmentConfig = EnvironmentConfig.fromEnvironment();
     final featureFlags = FeatureFlagService(environmentConfig);
     final gateway = await LocalMetarixGateway.bootstrap();
+    await gateway.saveConnectorRuntimeState(
+      backendConfig.linkedInRuntimeState(
+        connected:
+            gateway.connectedAccountFor('linkedin')?.status ==
+            SocialConnectionStatus.connected,
+      ),
+    );
     final policies = await const CarisPolicyService().load();
     const accessControlService = AccessControlService();
     final approvalEvaluator = ApprovalEvaluator(policies);
@@ -113,6 +137,15 @@ class AppServices {
       'v1',
     );
     const recommendationEngine = RecommendationEngine();
+    final linkedInAuthService =
+        linkedInAuthServiceOverride ?? const LinkedInAuthService();
+    final linkedInTokenExchangeService =
+        linkedInTokenExchangeServiceOverride ??
+        const LinkedInTokenExchangeService();
+    final linkedInConnectionService = LinkedInConnectionService(
+      gateway,
+      linkedInTokenExchangeService,
+    );
     final exportService = ExportService(
       gateway,
       const StrategyExportFormatter(),
@@ -120,6 +153,7 @@ class AppServices {
       const EvidenceExportFormatter(),
     );
     final globalSearchService = GlobalSearchService(gateway);
+    final backendApiService = BackendApiService();
     final jobQueueService = JobQueueService.seeded(gateway.workspace.id);
     final assetLibraryController = AssetLibraryController(
       LocalAssetRepository(gateway),
@@ -150,8 +184,11 @@ class AppServices {
       backendConnectors: backendConnectors,
       metricNormalizer: metricNormalizer,
       recommendationEngine: recommendationEngine,
+      linkedInAuthService: linkedInAuthService,
+      linkedInConnectionService: linkedInConnectionService,
       exportService: exportService,
       globalSearchService: globalSearchService,
+      backendApiService: backendApiService,
       jobQueueService: jobQueueService,
       activityController: ActivityController(gateway),
       assetLibraryController: assetLibraryController,
@@ -172,6 +209,7 @@ class AppServices {
         gateway,
         gateway,
         gateway,
+        backendConnectors,
         accessControlService,
         publishPostureEvaluator,
         publishStateTransitionService,
@@ -183,12 +221,22 @@ class AppServices {
   }
 
   static ConnectorBundle _selectBackendConnectors(BackendConfig backendConfig) {
-    return switch (backendConfig.mode) {
+    final bundle = switch (backendConfig.mode) {
       BackendMode.demo => DemoConnectorBundle.create(),
       // TODO: Replace this fallback with local secret-backed connector
       // implementations once real platform adapters are available.
       BackendMode.supabaseRest => DemoConnectorBundle.create(),
     };
+
+    return ConnectorBundle(
+      runtimeKind: bundle.runtimeKind,
+      accountConnectors: bundle.accountConnectors,
+      publishConnectors: bundle.publishConnectors,
+      analyticsConnectors: bundle.analyticsConnectors,
+      conversationConnectors: bundle.conversationConnectors,
+      listeningConnectors: bundle.listeningConnectors,
+      smartLinkService: bundle.smartLinkService,
+    );
   }
 
   void dispose() {
@@ -200,6 +248,7 @@ class AppServices {
     assetLibraryController.dispose();
     collaborationController.dispose();
     jobQueueService.dispose();
+    backendApiService.dispose();
     strategyController.dispose();
     planningController.dispose();
     conversationController.dispose();

@@ -221,7 +221,7 @@ The product should be built using these implementation rules:
 
 The following documents are required to operationalize this charter:
 
-- `docs/V1_SCOPE.md`
+- `V1_SCOPE.md`
 - `docs/DOMAIN_MODEL.md`
 
-Additional Caris and Phoenix surfaces should be created only after these bounded product documents are stable.
+Additional governance and runtime surfaces should be created only after these bounded product documents are stable.
