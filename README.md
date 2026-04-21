@@ -4,9 +4,9 @@
 
 # MetaRix
 
-MetaRix is a public build in progress focused on making modern marketing operations more structured, visible, and execution-ready.
+MetaRix is a completed public demo build focused on making a modern marketing operations more structured, visible, and execution-ready.
 
-The product is being shaped as a unified operating workspace for teams that need clearer coordination across campaign strategy, planning, workflow, scheduling, reporting, listening, assets, activity, and admin oversight.
+The product is  shaped as a unified operating workspace for teams that need clearer coordination across campaign strategy, planning, workflow, scheduling, reporting, listening, assets, activity, and admin oversight.
 
 ## Current public build
 
@@ -37,7 +37,7 @@ This matters because many teams still manage these functions across fragmented t
 
 ## Build status
 
-MetaRix is still in active development.
+MetaRix is still is a completed demo build.
 
 The current milestone is not about claiming a finished platform. It is about demonstrating that the product is taking shape as a real, navigable operating system rather than remaining a concept alone.
 
