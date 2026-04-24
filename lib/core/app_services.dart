@@ -33,7 +33,13 @@ import '../metarix_core/release/accounts/local_social_account_repository.dart';
 import '../metarix_core/release/content/content_asset_controller.dart';
 import '../metarix_core/release/content/content_asset_service.dart';
 import '../metarix_core/release/content/local_content_asset_repository.dart';
+import '../metarix_core/release/accounts/social_platform.dart';
 import '../metarix_core/release/platforms/platform_capability_service.dart';
+import '../metarix_core/release/publishing/adapters/demo_social_publisher.dart';
+import '../metarix_core/release/publishing/local_publish_job_repository.dart';
+import '../metarix_core/release/publishing/publish_pipeline_controller.dart';
+import '../metarix_core/release/publishing/publish_pipeline_service.dart';
+import '../metarix_core/release/publishing/social_publisher.dart';
 import '../metarix_core/release/scheduler/local_scheduled_post_repository.dart';
 import '../metarix_core/release/scheduler/scheduler_controller.dart';
 import '../metarix_core/release/scheduler/scheduler_service.dart';
@@ -69,6 +75,7 @@ class AppServices {
     required this.socialAccountController,
     required this.contentAssetController,
     required this.schedulerController,
+    required this.publishPipelineController,
     required this.exportService,
     required this.globalSearchService,
     required this.backendApiService,
@@ -103,6 +110,7 @@ class AppServices {
   final SocialAccountController socialAccountController;
   final ContentAssetController contentAssetController;
   final SchedulerController schedulerController;
+  final PublishPipelineController publishPipelineController;
   final ExportService exportService;
   final GlobalSearchService globalSearchService;
   final BackendApiService backendApiService;
@@ -191,6 +199,20 @@ class AppServices {
       ),
     );
     await schedulerController.loadPosts(gateway.workspace.id);
+    final publishJobRepository = await LocalPublishJobRepository.create();
+    final publisherRegistry = <SocialPlatform, SocialPublisher>{
+      SocialPlatform.demo: const DemoSocialPublisher(),
+    };
+    final publishPipelineController = PublishPipelineController(
+      PublishPipelineService(
+        publishJobRepository,
+        scheduledPostRepository,
+        contentRepository,
+        socialRepository,
+        publisherRegistry,
+      ),
+    );
+    await publishPipelineController.loadJobs(gateway.workspace.id);
     final exportService = ExportService(
       gateway,
       const StrategyExportFormatter(),
@@ -235,6 +257,7 @@ class AppServices {
       socialAccountController: socialAccountController,
       contentAssetController: contentAssetController,
       schedulerController: schedulerController,
+      publishPipelineController: publishPipelineController,
       exportService: exportService,
       globalSearchService: globalSearchService,
       backendApiService: backendApiService,
@@ -300,6 +323,7 @@ class AppServices {
     socialAccountController.dispose();
     contentAssetController.dispose();
     schedulerController.dispose();
+    publishPipelineController.dispose();
     jobQueueService.dispose();
     backendApiService.dispose();
     strategyController.dispose();

@@ -17,6 +17,7 @@ import '../features/workflow/presentation/workflow_screen.dart';
 import '../metarix_core/release/auth/auth_gate.dart';
 import '../screens/content/content_explorer_screen.dart';
 import '../screens/login/login_screen.dart';
+import '../screens/publishing/release_publish_pipeline_screen.dart';
 import '../screens/scheduler/release_scheduler_screen.dart';
 import '../screens/settings/social_account_settings_screen.dart';
 import '../theme/metarix_theme_controller.dart';
@@ -42,7 +43,7 @@ class _MetarixAppState extends State<MetarixApp> {
     _backendHealthy = widget.services.backendApiService.health();
   }
 
-  static const _demoPath = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  static const _demoPath = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
   static const _items = [
     _ShellItem('Publish', Icons.send_outlined),
     _ShellItem('Strategy', Icons.flag_outlined),
@@ -55,6 +56,7 @@ class _MetarixAppState extends State<MetarixApp> {
     _ShellItem('Assets', Icons.perm_media_outlined),
     _ShellItem('Content', Icons.collections_outlined),
     _ShellItem('Scheduler+', Icons.schedule_outlined),
+    _ShellItem('Publish+', Icons.cloud_upload_outlined),
     _ShellItem('Activity', Icons.history_outlined),
     _ShellItem('Admin', Icons.admin_panel_settings_outlined),
   ];
@@ -266,8 +268,9 @@ class _MetarixAppState extends State<MetarixApp> {
       8 => const AssetLibraryScreen(),
       9 => const ContentExplorerScreen(),
       10 => const ReleaseSchedulerScreen(),
-      11 => const ActivityTimelineScreen(),
-      12 => const AdminScreen(),
+      11 => const ReleasePublishPipelineScreen(),
+      12 => const ActivityTimelineScreen(),
+      13 => const AdminScreen(),
       _ => const WorkflowScreen(),
     };
   }
@@ -358,7 +361,7 @@ class _DemoBanner extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(
-            'Demo path: Publish -> Strategy -> Planning -> Workflow -> Schedule -> Inbox -> Reports -> Listening -> Assets -> Content -> Scheduler+ -> Activity -> Admin',
+            'Demo path: Publish -> Strategy -> Planning -> Workflow -> Schedule -> Inbox -> Reports -> Listening -> Assets -> Content -> Scheduler+ -> Publish+ -> Activity -> Admin',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           FilledButton(onPressed: onNext, child: const Text('Go To Next Step')),

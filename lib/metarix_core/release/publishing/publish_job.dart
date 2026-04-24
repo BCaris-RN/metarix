@@ -9,6 +9,8 @@ class PublishJob {
     required this.id,
     required this.createdAtIso,
     required this.updatedAtIso,
+    this.workspaceId,
+    this.scheduledPostId,
     required this.platform,
     required this.target,
     required this.publishStatus,
@@ -24,6 +26,8 @@ class PublishJob {
   final String id;
   final String createdAtIso;
   final String updatedAtIso;
+  final String? workspaceId;
+  final String? scheduledPostId;
   final SocialPlatform platform;
   final PublishTarget target;
   final PublishStatus publishStatus;
@@ -39,6 +43,10 @@ class PublishJob {
     String? id,
     String? createdAtIso,
     String? updatedAtIso,
+    String? workspaceId,
+    bool clearWorkspaceId = false,
+    String? scheduledPostId,
+    bool clearScheduledPostId = false,
     SocialPlatform? platform,
     PublishTarget? target,
     PublishStatus? publishStatus,
@@ -57,6 +65,10 @@ class PublishJob {
       id: id ?? this.id,
       createdAtIso: createdAtIso ?? this.createdAtIso,
       updatedAtIso: updatedAtIso ?? this.updatedAtIso,
+      workspaceId: clearWorkspaceId ? null : workspaceId ?? this.workspaceId,
+      scheduledPostId: clearScheduledPostId
+          ? null
+          : scheduledPostId ?? this.scheduledPostId,
       platform: platform ?? this.platform,
       target: target ?? this.target,
       publishStatus: publishStatus ?? this.publishStatus,
@@ -76,6 +88,8 @@ class PublishJob {
         'id': id,
         'createdAtIso': createdAtIso,
         'updatedAtIso': updatedAtIso,
+        'workspaceId': workspaceId,
+        'scheduledPostId': scheduledPostId,
         'platform': platform.name,
         'target': target.toJson(),
         'publishStatus': publishStatus.name,
@@ -95,6 +109,8 @@ class PublishJob {
       id: stringOrFallback(json['id'], 'publish-local'),
       createdAtIso: isoOrNow(json['createdAtIso']),
       updatedAtIso: isoOrNow(json['updatedAtIso']),
+      workspaceId: json['workspaceId'] as String?,
+      scheduledPostId: json['scheduledPostId'] as String?,
       platform: SocialPlatformX.fromName(json['platform'] as String?),
       target: targetJson is Map<String, Object?>
           ? PublishTarget.fromJson(targetJson)
