@@ -1,6 +1,5 @@
 const fs = require('fs/promises');
 const path = require('path');
-const { sanitize } = require('./safeLogger');
 
 async function ensureDir(filePath) {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -41,7 +40,7 @@ function createTokenStore(filePath) {
   }
 
   async function writeStore(store) {
-    await atomicWrite(filePath, sanitize(store));
+    await atomicWrite(filePath, store);
   }
 
   async function getConnection({ workspaceId, provider }) {

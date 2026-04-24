@@ -30,6 +30,8 @@ import '../metarix_core/release/auth/local_auth_repository.dart';
 import '../metarix_core/release/accounts/social_account_controller.dart';
 import '../metarix_core/release/accounts/social_account_service.dart';
 import '../metarix_core/release/accounts/local_social_account_repository.dart';
+import '../metarix_core/release/connectors/backend_connector_client.dart';
+import '../metarix_core/release/connectors/connector_readiness_controller.dart';
 import '../metarix_core/release/content/content_asset_controller.dart';
 import '../metarix_core/release/content/content_asset_service.dart';
 import '../metarix_core/release/content/local_content_asset_repository.dart';
@@ -73,6 +75,8 @@ class AppServices {
     required this.linkedInConnectionService,
     required this.appSessionController,
     required this.socialAccountController,
+    required this.backendConnectorClient,
+    required this.connectorReadinessController,
     required this.contentAssetController,
     required this.schedulerController,
     required this.publishPipelineController,
@@ -108,6 +112,8 @@ class AppServices {
   final LinkedInConnectionService linkedInConnectionService;
   final AppSessionController appSessionController;
   final SocialAccountController socialAccountController;
+  final BackendConnectorClient backendConnectorClient;
+  final ConnectorReadinessController connectorReadinessController;
   final ContentAssetController contentAssetController;
   final SchedulerController schedulerController;
   final PublishPipelineController publishPipelineController;
@@ -184,6 +190,14 @@ class AppServices {
       SocialAccountService(socialRepository),
     );
     await socialAccountController.load(gateway.workspace.id);
+    final backendConnectorClient = HttpBackendConnectorClient(
+      baseUrl: 'http://localhost:8787',
+    );
+    final connectorReadinessController = ConnectorReadinessController(
+      backendConnectorClient,
+    );
+    await connectorReadinessController.load();
+    await connectorReadinessController.refreshWorkspace(gateway.workspace.id);
     final contentRepository = await LocalContentAssetRepository.create();
     final contentAssetController = ContentAssetController(
       ContentAssetService(contentRepository, const PlatformCapabilityService()),
@@ -255,6 +269,8 @@ class AppServices {
       linkedInConnectionService: linkedInConnectionService,
       appSessionController: appSessionController,
       socialAccountController: socialAccountController,
+      backendConnectorClient: backendConnectorClient,
+      connectorReadinessController: connectorReadinessController,
       contentAssetController: contentAssetController,
       schedulerController: schedulerController,
       publishPipelineController: publishPipelineController,
@@ -321,6 +337,7 @@ class AppServices {
     collaborationController.dispose();
     appSessionController.dispose();
     socialAccountController.dispose();
+    connectorReadinessController.dispose();
     contentAssetController.dispose();
     schedulerController.dispose();
     publishPipelineController.dispose();

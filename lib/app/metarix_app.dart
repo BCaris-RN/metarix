@@ -16,6 +16,7 @@ import '../features/strategy/presentation/strategy_screen.dart';
 import '../features/workflow/presentation/workflow_screen.dart';
 import '../metarix_core/release/auth/auth_gate.dart';
 import '../screens/content/content_explorer_screen.dart';
+import '../screens/connectors/connector_readiness_screen.dart';
 import '../screens/login/login_screen.dart';
 import '../screens/publishing/release_publish_pipeline_screen.dart';
 import '../screens/scheduler/release_scheduler_screen.dart';
@@ -43,7 +44,7 @@ class _MetarixAppState extends State<MetarixApp> {
     _backendHealthy = widget.services.backendApiService.health();
   }
 
-  static const _demoPath = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+  static const _demoPath = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
   static const _items = [
     _ShellItem('Publish', Icons.send_outlined),
     _ShellItem('Strategy', Icons.flag_outlined),
@@ -59,6 +60,7 @@ class _MetarixAppState extends State<MetarixApp> {
     _ShellItem('Publish+', Icons.cloud_upload_outlined),
     _ShellItem('Activity', Icons.history_outlined),
     _ShellItem('Admin', Icons.admin_panel_settings_outlined),
+    _ShellItem('Connectors', Icons.link_outlined),
   ];
 
   @override
@@ -271,6 +273,7 @@ class _MetarixAppState extends State<MetarixApp> {
       11 => const ReleasePublishPipelineScreen(),
       12 => const ActivityTimelineScreen(),
       13 => const AdminScreen(),
+      14 => const ConnectorReadinessScreen(),
       _ => const WorkflowScreen(),
     };
   }
@@ -361,7 +364,7 @@ class _DemoBanner extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(
-            'Demo path: Publish -> Strategy -> Planning -> Workflow -> Schedule -> Inbox -> Reports -> Listening -> Assets -> Content -> Scheduler+ -> Publish+ -> Activity -> Admin',
+            'Demo path: Publish -> Strategy -> Planning -> Workflow -> Schedule -> Inbox -> Reports -> Listening -> Assets -> Content -> Scheduler+ -> Publish+ -> Activity -> Admin -> Connectors',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           FilledButton(onPressed: onNext, child: const Text('Go To Next Step')),

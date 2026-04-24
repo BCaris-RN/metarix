@@ -90,6 +90,7 @@ backend/.local/
 backend/node_modules/
 backend/npm-debug.log*
 backend/.DS_Store
+!backend/.env.example
 
 # --- Dart / Flutter ---
 .dart_tool/
