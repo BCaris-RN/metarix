@@ -85,6 +85,11 @@ node_modules/
 coverage/
 out/
 *.tsbuildinfo
+backend/.env
+backend/.local/
+backend/node_modules/
+backend/npm-debug.log*
+backend/.DS_Store
 
 # --- Dart / Flutter ---
 .dart_tool/
