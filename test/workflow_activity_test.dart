@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:metarix/data/local_metarix_gateway.dart';
+import 'package:metarix/metarix_core/connectors/demo/demo_connector_bundle.dart';
 import 'package:metarix/features/publish/application/publish_state_transition_service.dart';
 import 'package:metarix/features/publish/domain/publish_models.dart';
 import 'package:metarix/features/workflow/application/workflow_controller.dart';
@@ -17,12 +18,14 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final gateway = await LocalMetarixGateway.bootstrap();
     final policies = await const CarisPolicyService().load();
+    final connectorBundle = DemoConnectorBundle.create();
     final controller = WorkflowController(
       gateway,
       gateway,
       gateway,
       gateway,
       gateway,
+      connectorBundle,
       const AccessControlService(),
       PublishPostureEvaluator(
         policies,

@@ -14,6 +14,11 @@ import '../features/settings/presentation/theme_editor_dialog.dart';
 import '../features/search/presentation/global_search_screen.dart';
 import '../features/strategy/presentation/strategy_screen.dart';
 import '../features/workflow/presentation/workflow_screen.dart';
+import '../metarix_core/release/auth/auth_gate.dart';
+import '../screens/content/content_explorer_screen.dart';
+import '../screens/login/login_screen.dart';
+import '../screens/scheduler/release_scheduler_screen.dart';
+import '../screens/settings/social_account_settings_screen.dart';
 import '../theme/metarix_theme_controller.dart';
 import 'metarix_scope.dart';
 
@@ -37,7 +42,7 @@ class _MetarixAppState extends State<MetarixApp> {
     _backendHealthy = widget.services.backendApiService.health();
   }
 
-  static const _demoPath = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  static const _demoPath = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   static const _items = [
     _ShellItem('Publish', Icons.send_outlined),
     _ShellItem('Strategy', Icons.flag_outlined),
@@ -48,6 +53,8 @@ class _MetarixAppState extends State<MetarixApp> {
     _ShellItem('Reports', Icons.bar_chart_outlined),
     _ShellItem('Listening', Icons.hearing_outlined),
     _ShellItem('Assets', Icons.perm_media_outlined),
+    _ShellItem('Content', Icons.collections_outlined),
+    _ShellItem('Scheduler+', Icons.schedule_outlined),
     _ShellItem('Activity', Icons.history_outlined),
     _ShellItem('Admin', Icons.admin_panel_settings_outlined),
   ];
@@ -89,6 +96,32 @@ class _MetarixAppState extends State<MetarixApp> {
                   ),
                   IconButton(
                     onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (routeContext) => LoginScreen(
+                            controller: widget.services.appSessionController,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.login_outlined),
+                    tooltip: 'Login',
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (routeContext) => SocialAccountSettingsScreen(
+                            controller: widget.services.socialAccountController,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.settings_outlined),
+                    tooltip: 'Accounts',
+                  ),
+                  IconButton(
+                    onPressed: () {
                       showDialog<void>(
                         context: context,
                         builder: (dialogContext) => GlobalSearchScreen(
@@ -109,7 +142,10 @@ class _MetarixAppState extends State<MetarixApp> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Center(
                       child: AnimatedBuilder(
-                        animation: widget.services.adminController,
+                        animation: Listenable.merge([
+                          widget.services.adminController,
+                          widget.services.appSessionController,
+                        ]),
                         builder: (context, _) {
                           return FutureBuilder<bool>(
                             future: _backendHealthy,
@@ -117,8 +153,16 @@ class _MetarixAppState extends State<MetarixApp> {
                               final backendLabel = snapshot.connectionState == ConnectionState.done
                                   ? (snapshot.data == true ? 'Backend online' : 'Backend offline')
                                   : 'Backend checking';
+                              final auth = widget.services.appSessionController;
+                              final authLabel = auth.isLoading
+                                  ? 'Auth loading'
+                                  : auth.session == null
+                                      ? 'Signed out'
+                                      : auth.hasExpiredSession
+                                          ? 'Session expired'
+                                          : 'Signed in';
                               return Text(
-                                '${widget.services.gateway.workspace.name} - ${widget.services.adminController.currentRole.label} - $backendLabel',
+                                '${widget.services.gateway.workspace.name} - ${widget.services.adminController.currentRole.label} - $backendLabel - $authLabel',
                               );
                             },
                           );
@@ -128,60 +172,63 @@ class _MetarixAppState extends State<MetarixApp> {
                   ),
                 ],
               ),
-              body: LayoutBuilder(
-                builder: (context, constraints) {
-                  final rail = constraints.maxWidth >= 960;
-                  final content = _buildCurrentScreen();
+              body: AuthGate(
+                controller: widget.services.appSessionController,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final rail = constraints.maxWidth >= 960;
+                    final content = _buildCurrentScreen();
 
-                  return Column(
-                    children: [
-                      _CreatorLaunchPad(
-                        onOpenPublish: () => setState(() => _selectedIndex = 0),
-                        onOpenWorkflow: () => setState(() => _selectedIndex = 3),
-                        onPublishEverywhere: () => setState(() => _selectedIndex = 3),
-                      ),
-                      _DemoBanner(
-                        currentIndex: _selectedIndex,
-                        onNext: () {
-                          final currentPathIndex = _demoPath.indexOf(
-                            _selectedIndex,
-                          );
-                          final nextPathIndex =
-                              (currentPathIndex + 1) % _demoPath.length;
-                          setState(
-                            () => _selectedIndex = _demoPath[nextPathIndex],
-                          );
-                        },
-                        onReset: () async {
-                          await widget.services.adminController.resetDemo();
-                        },
-                      ),
-                      Expanded(
-                        child: Row(
-                          children: [
-                            if (rail)
-                              NavigationRail(
-                                selectedIndex: _selectedIndex,
-                                onDestinationSelected: (value) {
-                                  setState(() => _selectedIndex = value);
-                                },
-                                labelType: NavigationRailLabelType.all,
-                                destinations: _items
-                                    .map(
-                                      (item) => NavigationRailDestination(
-                                        icon: Icon(item.icon),
-                                        label: Text(item.label),
-                                      ),
-                                    )
-                                    .toList(),
-                              ),
-                            Expanded(child: content),
-                          ],
+                    return Column(
+                      children: [
+                        _CreatorLaunchPad(
+                          onOpenPublish: () => setState(() => _selectedIndex = 0),
+                          onOpenWorkflow: () => setState(() => _selectedIndex = 3),
+                          onPublishEverywhere: () => setState(() => _selectedIndex = 3),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                        _DemoBanner(
+                          currentIndex: _selectedIndex,
+                          onNext: () {
+                            final currentPathIndex = _demoPath.indexOf(
+                              _selectedIndex,
+                            );
+                            final nextPathIndex =
+                                (currentPathIndex + 1) % _demoPath.length;
+                            setState(
+                              () => _selectedIndex = _demoPath[nextPathIndex],
+                            );
+                          },
+                          onReset: () async {
+                            await widget.services.adminController.resetDemo();
+                          },
+                        ),
+                        Expanded(
+                          child: Row(
+                            children: [
+                              if (rail)
+                                NavigationRail(
+                                  selectedIndex: _selectedIndex,
+                                  onDestinationSelected: (value) {
+                                    setState(() => _selectedIndex = value);
+                                  },
+                                  labelType: NavigationRailLabelType.all,
+                                  destinations: _items
+                                      .map(
+                                        (item) => NavigationRailDestination(
+                                          icon: Icon(item.icon),
+                                          label: Text(item.label),
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              Expanded(child: content),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
               bottomNavigationBar: MediaQuery.of(context).size.width < 960
                   ? NavigationBar(
@@ -210,17 +257,19 @@ class _MetarixAppState extends State<MetarixApp> {
     return switch (_selectedIndex) {
       0 => const WorkflowScreen(),
       1 => const StrategyScreen(),
-          2 => const PlanningScreen(),
-          3 => const WorkflowScreen(),
-          4 => const ScheduleScreen(),
-          5 => const InboxScreen(),
-          6 => const ReportsScreen(),
-          7 => const ListeningScreen(),
-          8 => const AssetLibraryScreen(),
-          9 => const ActivityTimelineScreen(),
-          10 => const AdminScreen(),
-          _ => const WorkflowScreen(),
-        };
+      2 => const PlanningScreen(),
+      3 => const WorkflowScreen(),
+      4 => const ScheduleScreen(),
+      5 => const InboxScreen(),
+      6 => const ReportsScreen(),
+      7 => const ListeningScreen(),
+      8 => const AssetLibraryScreen(),
+      9 => const ContentExplorerScreen(),
+      10 => const ReleaseSchedulerScreen(),
+      11 => const ActivityTimelineScreen(),
+      12 => const AdminScreen(),
+      _ => const WorkflowScreen(),
+    };
   }
 }
 
@@ -309,7 +358,7 @@ class _DemoBanner extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           Text(
-            'Demo path: Publish -> Strategy -> Planning -> Workflow -> Schedule -> Inbox -> Reports -> Listening -> Assets -> Activity -> Admin',
+            'Demo path: Publish -> Strategy -> Planning -> Workflow -> Schedule -> Inbox -> Reports -> Listening -> Assets -> Content -> Scheduler+ -> Activity -> Admin',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           FilledButton(onPressed: onNext, child: const Text('Go To Next Step')),

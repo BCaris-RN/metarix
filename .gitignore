@@ -83,10 +83,12 @@ node_modules/
 .nuxt/
 .svelte-kit/
 coverage/
+out/
 *.tsbuildinfo
 
 # --- Dart / Flutter ---
 .dart_tool/
+.playwright-cli/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
@@ -157,6 +159,9 @@ raw_exports/
 customer_exports/
 social_exports/
 fixtures/private/
+caris/
+phoenix/
+metarix_private/
 
 # --- Optional keepers ---
 # If you later decide a generated artifact is intentionally public,

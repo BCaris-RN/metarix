@@ -24,8 +24,20 @@ import '../features/strategy/application/strategy_controller.dart';
 import '../features/workflow/application/workflow_controller.dart';
 import '../metarix_core/connectors/connector_bundle.dart';
 import '../metarix_core/connectors/demo/demo_connector_bundle.dart';
+import '../metarix_core/release/auth/app_session_controller.dart';
+import '../metarix_core/release/auth/app_session_service.dart';
+import '../metarix_core/release/auth/local_auth_repository.dart';
+import '../metarix_core/release/accounts/social_account_controller.dart';
+import '../metarix_core/release/accounts/social_account_service.dart';
+import '../metarix_core/release/accounts/local_social_account_repository.dart';
+import '../metarix_core/release/content/content_asset_controller.dart';
+import '../metarix_core/release/content/content_asset_service.dart';
+import '../metarix_core/release/content/local_content_asset_repository.dart';
+import '../metarix_core/release/platforms/platform_capability_service.dart';
+import '../metarix_core/release/scheduler/local_scheduled_post_repository.dart';
+import '../metarix_core/release/scheduler/scheduler_controller.dart';
+import '../metarix_core/release/scheduler/scheduler_service.dart';
 import '../metarix_core/models/connected_social_account.dart';
-import '../metarix_core/models/model_types.dart';
 import '../runtime/jobs/job_queue_service.dart';
 import '../services/access_control_service.dart';
 import '../services/backend_api_service.dart';
@@ -53,6 +65,10 @@ class AppServices {
     required this.recommendationEngine,
     required this.linkedInAuthService,
     required this.linkedInConnectionService,
+    required this.appSessionController,
+    required this.socialAccountController,
+    required this.contentAssetController,
+    required this.schedulerController,
     required this.exportService,
     required this.globalSearchService,
     required this.backendApiService,
@@ -83,6 +99,10 @@ class AppServices {
   final RecommendationEngine recommendationEngine;
   final LinkedInAuthService linkedInAuthService;
   final LinkedInConnectionService linkedInConnectionService;
+  final AppSessionController appSessionController;
+  final SocialAccountController socialAccountController;
+  final ContentAssetController contentAssetController;
+  final SchedulerController schedulerController;
   final ExportService exportService;
   final GlobalSearchService globalSearchService;
   final BackendApiService backendApiService;
@@ -146,6 +166,31 @@ class AppServices {
       gateway,
       linkedInTokenExchangeService,
     );
+    final authRepository = await LocalAuthRepository.create();
+    final appSessionController = AppSessionController(
+      AppSessionService(authRepository),
+    );
+    await appSessionController.bootstrap();
+    final socialRepository = await LocalSocialAccountRepository.create();
+    final socialAccountController = SocialAccountController(
+      SocialAccountService(socialRepository),
+    );
+    await socialAccountController.load(gateway.workspace.id);
+    final contentRepository = await LocalContentAssetRepository.create();
+    final contentAssetController = ContentAssetController(
+      ContentAssetService(contentRepository, const PlatformCapabilityService()),
+    );
+    await contentAssetController.loadAssets(gateway.workspace.id);
+    final scheduledPostRepository = await LocalScheduledPostRepository.create();
+    final schedulerController = SchedulerController(
+      SchedulerService(
+        scheduledPostRepository,
+        contentRepository,
+        socialRepository,
+        const PlatformCapabilityService(),
+      ),
+    );
+    await schedulerController.loadPosts(gateway.workspace.id);
     final exportService = ExportService(
       gateway,
       const StrategyExportFormatter(),
@@ -186,6 +231,10 @@ class AppServices {
       recommendationEngine: recommendationEngine,
       linkedInAuthService: linkedInAuthService,
       linkedInConnectionService: linkedInConnectionService,
+      appSessionController: appSessionController,
+      socialAccountController: socialAccountController,
+      contentAssetController: contentAssetController,
+      schedulerController: schedulerController,
       exportService: exportService,
       globalSearchService: globalSearchService,
       backendApiService: backendApiService,
@@ -247,6 +296,10 @@ class AppServices {
     activityController.dispose();
     assetLibraryController.dispose();
     collaborationController.dispose();
+    appSessionController.dispose();
+    socialAccountController.dispose();
+    contentAssetController.dispose();
+    schedulerController.dispose();
     jobQueueService.dispose();
     backendApiService.dispose();
     strategyController.dispose();
