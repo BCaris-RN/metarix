@@ -30,10 +30,38 @@ class HttpBackendConnectorClient implements BackendConnectorClient {
     return Uri.parse('$baseUrl$path').replace(queryParameters: queryParameters);
   }
 
+  Map<String, Object?>? _decodeObject(String body) {
+    if (body.trim().isEmpty) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(body);
+      return decoded is Map<String, Object?> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Future<ReleaseResult<List<ProviderStatus>>> getProviderStatuses() async {
     final response = await _client.get(_uri('/api/providers/status'));
-    final body = jsonDecode(response.body) as Map<String, Object?>;
+    if (response.statusCode != 200) {
+      return ReleaseResult<List<ProviderStatus>>.failure(
+        errorCode: 'backend.unavailable',
+        userMessage: 'Backend readiness is unavailable.',
+        technicalMessage: 'HTTP ${response.statusCode} from /api/providers/status.',
+        retryable: true,
+      );
+    }
+    final body = _decodeObject(response.body);
+    if (body == null) {
+      return ReleaseResult<List<ProviderStatus>>.failure(
+        errorCode: 'backend.malformed_response',
+        userMessage: 'Backend readiness is unavailable.',
+        technicalMessage: 'Provider status response was empty or malformed.',
+        retryable: true,
+      );
+    }
     final items = (body['providers'] as List? ?? const [])
         .whereType<Map<String, Object?>>()
         .map(ProviderStatus.fromJson)
@@ -44,7 +72,23 @@ class HttpBackendConnectorClient implements BackendConnectorClient {
   @override
   Future<ReleaseResult<ProviderStatus>> getProviderStatus(String provider) async {
     final response = await _client.get(_uri('/api/providers/$provider/status'));
-    final body = jsonDecode(response.body) as Map<String, Object?>;
+    if (response.statusCode != 200) {
+      return ReleaseResult<ProviderStatus>.failure(
+        errorCode: 'backend.unavailable',
+        userMessage: 'Backend readiness is unavailable.',
+        technicalMessage: 'HTTP ${response.statusCode} from /api/providers/$provider/status.',
+        retryable: true,
+      );
+    }
+    final body = _decodeObject(response.body);
+    if (body == null) {
+      return ReleaseResult<ProviderStatus>.failure(
+        errorCode: 'backend.malformed_response',
+        userMessage: 'Backend readiness is unavailable.',
+        technicalMessage: 'Provider status response was empty or malformed.',
+        retryable: true,
+      );
+    }
     return ReleaseResult<ProviderStatus>.success(
       ProviderStatus.fromJson(
         (body['provider'] as Map<String, Object?>?) ?? const <String, Object?>{},
@@ -60,7 +104,17 @@ class HttpBackendConnectorClient implements BackendConnectorClient {
     final response = await _client.get(
       _uri('/api/oauth/$provider/login-url', {'workspaceId': workspaceId}),
     );
-    final body = jsonDecode(response.body) as Map<String, Object?>;
+    final body = _decodeObject(response.body);
+    if (response.statusCode != 200 || body == null) {
+      return ReleaseResult<String>.failure(
+        errorCode: 'backend.unavailable',
+        userMessage: 'Backend readiness is unavailable.',
+        technicalMessage: response.statusCode == 200
+            ? 'Login URL response was empty or malformed.'
+            : 'HTTP ${response.statusCode} from login-url endpoint.',
+        retryable: true,
+      );
+    }
     if (body['ok'] == true) {
       return ReleaseResult<String>.success(body['loginUrl'] as String? ?? '');
     }
@@ -78,7 +132,23 @@ class HttpBackendConnectorClient implements BackendConnectorClient {
     final response = await _client.get(
       _uri('/api/oauth/$provider/connection', {'workspaceId': workspaceId}),
     );
-    final body = jsonDecode(response.body) as Map<String, Object?>;
+    if (response.statusCode != 200) {
+      return ReleaseResult<ProviderConnectionSummary>.failure(
+        errorCode: 'backend.unavailable',
+        userMessage: 'Backend readiness is unavailable.',
+        technicalMessage: 'HTTP ${response.statusCode} from connection endpoint.',
+        retryable: true,
+      );
+    }
+    final body = _decodeObject(response.body);
+    if (body == null) {
+      return ReleaseResult<ProviderConnectionSummary>.failure(
+        errorCode: 'backend.malformed_response',
+        userMessage: 'Backend readiness is unavailable.',
+        technicalMessage: 'Connection response was empty or malformed.',
+        retryable: true,
+      );
+    }
     if (body['ok'] == true) {
       return ReleaseResult<ProviderConnectionSummary>.success(
         ProviderConnectionSummary.fromJson(body),
@@ -98,7 +168,23 @@ class HttpBackendConnectorClient implements BackendConnectorClient {
     final response = await _client.delete(
       _uri('/api/oauth/$provider/connection', {'workspaceId': workspaceId}),
     );
-    final body = jsonDecode(response.body) as Map<String, Object?>;
+    if (response.statusCode != 200) {
+      return ReleaseResult<void>.failure(
+        errorCode: 'backend.unavailable',
+        userMessage: 'Backend readiness is unavailable.',
+        technicalMessage: 'HTTP ${response.statusCode} from disconnect endpoint.',
+        retryable: true,
+      );
+    }
+    final body = _decodeObject(response.body);
+    if (body == null) {
+      return ReleaseResult<void>.failure(
+        errorCode: 'backend.malformed_response',
+        userMessage: 'Backend readiness is unavailable.',
+        technicalMessage: 'Disconnect response was empty or malformed.',
+        retryable: true,
+      );
+    }
     if (body['ok'] == true) {
       return ReleaseResult<void>.success(null);
     }

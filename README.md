@@ -67,6 +67,8 @@ MetaRix is intended to remain a self-hostable public repo. Public code, docs, as
 
 Local runtime state stays separate from the public repo. Secrets, tokens, personal data, local exports, watched folders, reports with real metrics, and other machine-specific runtime material belong in local-only storage.
 
+If real Meta credentials were ever committed, staged, or shared, rotate the Meta App Secret before continuing. Keep `backend/.env` local-only and never commit it.
+
 Do not commit:
 
 - `.env`

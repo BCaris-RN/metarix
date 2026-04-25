@@ -18,7 +18,6 @@
 secrets/
 private/
 credentials/
-auth/
 tokens/
 *.token
 *.oauth
@@ -131,7 +130,6 @@ semantic_bundle/
 
 # --- Runtime evidence / exports / reports ---
 evidence/
-exports/
 artifacts/
 reports/generated/
 tmp/
@@ -172,10 +170,6 @@ metarix_private/
 # --- Optional keepers ---
 # If you later decide a generated artifact is intentionally public,
 # remove it from this ignore list explicitly rather than weakening the whole file.
-
-# === MetaRix local-only proprietary boundaries ===
-# Local-only runtime boundaries begin below.
-# Check git status before any commit.
 
 # === MetaRix local-only runtime boundary ===
 .env

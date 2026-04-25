@@ -196,8 +196,12 @@ class AppServices {
     final connectorReadinessController = ConnectorReadinessController(
       backendConnectorClient,
     );
-    await connectorReadinessController.load();
-    await connectorReadinessController.refreshWorkspace(gateway.workspace.id);
+    try {
+      await connectorReadinessController.load();
+      await connectorReadinessController.refreshWorkspace(gateway.workspace.id);
+    } catch (_) {
+      // Keep local/offline boot available even when backend readiness cannot be read.
+    }
     final contentRepository = await LocalContentAssetRepository.create();
     final contentAssetController = ContentAssetController(
       ContentAssetService(contentRepository, const PlatformCapabilityService()),

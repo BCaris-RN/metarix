@@ -2,6 +2,8 @@
 
 Local backend boundary for OAuth callbacks, secrets, and token storage.
 
+Meta callback completion is still pending in this chunk. The local backend can prepare login URLs and state, but it does not complete the callback exchange yet.
+
 ## Setup
 
 ```powershell

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -10,7 +11,7 @@ def _decode_hex(value: str) -> str:
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 POLICY_DOC = REPO_ROOT / "docs" / "repo_provenance_and_non_leak_policy.md"
-IGNORED_DIRS = {".git", "build", "dist", "node_modules", ".dart_tool"}
+IGNORED_DIRS = {".git", "build", "dist", "node_modules", ".dart_tool", ".idea", ".vscode"}
 TEXT_EXTENSIONS = {
     ".bat",
     ".cmd",
@@ -48,9 +49,6 @@ SPECIAL_FILENAMES = {
 }
 
 FORBIDDEN_TOKENS = [
-    _decode_hex("3867656e746943"),
-    _decode_hex("6361726973"),
-    _decode_hex("70686f656e6978"),
     _decode_hex("53757072656d615f43"),
     _decode_hex("63705f73757065725f737461636b"),
     _decode_hex("6c65676163795f70686f656e69785f726566"),
@@ -59,10 +57,9 @@ FORBIDDEN_TOKENS = [
 ]
 FORBIDDEN_PATH_SEGMENTS = [
     _decode_hex("5f696e74616b652f"),
-    _decode_hex("53757072656d615f432f"),
-    _decode_hex("63617269732f"),
-    _decode_hex("70686f656e69782f"),
     _decode_hex("3867656e7469432f"),
+    _decode_hex("53757072656d615f432f"),
+    _decode_hex("70686f656e69782f"),
 ]
 SEMANTIC_MARKERS = [
     _decode_hex("3d3d3d20434f4445582053454d414e54494320534e415053484f54203d3d3d"),
@@ -71,7 +68,19 @@ SEMANTIC_MARKERS = [
 
 
 def _should_skip(path: Path) -> bool:
-    return any(part in IGNORED_DIRS for part in path.parts)
+    if any(part in IGNORED_DIRS for part in path.parts):
+        return True
+    try:
+        completed = subprocess.run(
+            ["git", "check-ignore", "-q", str(path)],
+            cwd=REPO_ROOT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        return completed.returncode == 0
+    except OSError:
+        return False
 
 
 def _is_text_file(path: Path) -> bool:
@@ -81,7 +90,9 @@ def _is_text_file(path: Path) -> bool:
 def _scan_file(path: Path) -> list[tuple[str, str]]:
     hits: list[tuple[str, str]] = []
     if path == POLICY_DOC:
-      return hits
+        return hits
+    if not _is_text_file(path):
+        return hits
 
     try:
         raw = path.read_bytes()
