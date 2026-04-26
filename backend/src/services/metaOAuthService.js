@@ -23,6 +23,48 @@ function createMetaOAuthService(tokenStorePath) {
     };
   }
 
+  function safeError(message, code) {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+  }
+
+  async function readJsonOrThrow(response, code, message) {
+    const raw = await response.text();
+    if (!raw.trim()) {
+      throw safeError(message, code);
+    }
+    try {
+      return JSON.parse(raw);
+    } catch (_) {
+      throw safeError(message, code);
+    }
+  }
+
+  async function readMetaErrorPayload(response) {
+    const raw = await response.text();
+    if (!raw.trim()) {
+      return null;
+    }
+    try {
+      const decoded = JSON.parse(raw);
+      const error = decoded && decoded.error ? decoded.error : null;
+      if (!error || typeof error !== 'object') {
+        return null;
+      }
+      return {
+        message: typeof error.message === 'string' ? error.message : null,
+        type: typeof error.type === 'string' ? error.type : null,
+        code: typeof error.code === 'number' ? error.code : null,
+        error_subcode:
+          typeof error.error_subcode === 'number' ? error.error_subcode : null,
+        fbtrace_id: typeof error.fbtrace_id === 'string' ? error.fbtrace_id : null,
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
   function buildLoginUrl({ workspaceId }) {
     const config = requireMetaConfig();
     if (!workspaceId || !String(workspaceId).trim()) {
@@ -59,11 +101,13 @@ function createMetaOAuthService(tokenStorePath) {
     endpoint.searchParams.set('code', code);
     const response = await fetch(endpoint.toString());
     if (!response.ok) {
-      const error = new Error('Meta token exchange failed.');
-      error.code = 'meta.token_exchange_failed';
-      throw error;
+      throw safeError('Meta token exchange failed.', 'meta.token_exchange_failed');
     }
-    return response.json();
+    return readJsonOrThrow(
+      response,
+      'meta.token_exchange_failed',
+      'Meta token exchange failed.',
+    );
   }
 
   async function exchangeForLongLivedToken({ accessToken }) {
@@ -75,9 +119,13 @@ function createMetaOAuthService(tokenStorePath) {
     endpoint.searchParams.set('fb_exchange_token', accessToken);
     const response = await fetch(endpoint.toString());
     if (!response.ok) {
-      return null;
+      throw safeError('Meta long-lived token exchange failed.', 'meta.long_lived_token_failed');
     }
-    return response.json();
+    return readJsonOrThrow(
+      response,
+      'meta.long_lived_token_failed',
+      'Meta long-lived token exchange failed.',
+    );
   }
 
   async function fetchMe({ accessToken }) {
@@ -87,28 +135,38 @@ function createMetaOAuthService(tokenStorePath) {
     endpoint.searchParams.set('access_token', accessToken);
     const response = await fetch(endpoint.toString());
     if (!response.ok) {
-      const error = new Error('Meta /me fetch failed.');
-      error.code = 'meta.me_fetch_failed';
-      throw error;
+      throw safeError('Meta /me fetch failed.', 'meta.me_fetch_failed');
     }
-    return response.json();
+    return readJsonOrThrow(response, 'meta.me_fetch_failed', 'Meta /me fetch failed.');
   }
 
   async function fetchPages({ accessToken }) {
     const config = requireMetaConfig();
     const endpoint = new URL(`https://graph.facebook.com/${config.graphVersion}/me/accounts`);
-    endpoint.searchParams.set('fields', 'id,name,access_token,category,perms');
+    endpoint.searchParams.set('fields', 'id,name,category,tasks,access_token');
     endpoint.searchParams.set('access_token', accessToken);
     const response = await fetch(endpoint.toString());
     if (!response.ok) {
-      const error = new Error('Meta pages fetch failed.');
-      error.code = 'meta.pages_fetch_failed';
+      const diagnostic = await readMetaErrorPayload(response);
+      const error = safeError('Meta pages fetch failed.', 'meta.pages_fetch_failed');
+      if (diagnostic) {
+        error.diagnostic = diagnostic;
+        error.message = `${error.message}: ${[
+          diagnostic.message,
+          diagnostic.type,
+          diagnostic.code !== null ? `code=${diagnostic.code}` : null,
+          diagnostic.error_subcode !== null ? `subcode=${diagnostic.error_subcode}` : null,
+          diagnostic.fbtrace_id ? `fbtrace_id=${diagnostic.fbtrace_id}` : null,
+        ]
+          .filter(Boolean)
+          .join(' | ')}`;
+      }
       throw error;
     }
-    return response.json();
+    return readJsonOrThrow(response, 'meta.pages_fetch_failed', 'Meta pages fetch failed.');
   }
 
-  async function buildSafeConnection({ workspaceId, me, pages, tokenRef }) {
+  function buildSafeConnection({ workspaceId, me, pages, tokenRef, userAccessToken }) {
     return {
       provider: 'meta',
       workspaceId,
@@ -119,10 +177,12 @@ function createMetaOAuthService(tokenStorePath) {
             id: page.id,
             name: page.name,
             category: page.category || null,
-            perms: Array.isArray(page.perms) ? page.perms : [],
+            tasks: Array.isArray(page.tasks) ? page.tasks : [],
+            pageAccessToken: page.pageAccessToken || null,
           }))
         : [],
       tokenRef,
+      userAccessToken,
       scopesRequested: getMetaConfig().metaScopes,
       connectedAtIso: new Date().toISOString(),
       updatedAtIso: new Date().toISOString(),
@@ -153,6 +213,28 @@ function createMetaOAuthService(tokenStorePath) {
     return tokenStore.consumePendingState({ state });
   }
 
+  async function saveMetaConnection({
+    workspaceId,
+    connection,
+  }) {
+    return tokenStore.saveConnection({
+      workspaceId,
+      provider: 'meta',
+      connection,
+    });
+  }
+
+  async function fetchPagesFromConnection({ connection }) {
+    const pages = Array.isArray(connection.pages) ? connection.pages : [];
+    return pages.map((page) => ({
+      id: page.id,
+      name: page.name,
+      category: page.category || null,
+      tasks: Array.isArray(page.tasks) ? page.tasks : [],
+      hasPageAccessToken: Boolean(page.pageAccessToken),
+    }));
+  }
+
   return {
     buildLoginUrl,
     exchangeCodeForUserToken,
@@ -164,6 +246,8 @@ function createMetaOAuthService(tokenStorePath) {
     getConnectionRecord,
     savePendingState,
     consumePendingState,
+    saveMetaConnection,
+    fetchPagesFromConnection,
   };
 }
 

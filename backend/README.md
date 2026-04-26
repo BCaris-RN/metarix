@@ -32,3 +32,13 @@ Invoke-RestMethod http://localhost:8787/api/meta/status
 8. Copy the returned `loginUrl` into a browser.
 9. Complete auth.
 10. Check `http://localhost:8787/api/meta/pages?workspaceId=demo-workspace`.
+
+## Meta OAuth local test
+
+1. Confirm `backend/.env` exists on your machine.
+2. Run `npm run dev`.
+3. Generate a login URL with `GET /api/oauth/meta/login-url?workspaceId=demo-workspace`.
+4. Open the returned URL in your browser.
+5. Complete Meta login.
+6. Verify `GET /api/oauth/meta/connection?workspaceId=demo-workspace`.
+7. Verify `GET /api/oauth/meta/pages?workspaceId=demo-workspace`.

@@ -11,6 +11,17 @@ async function main() {
     throw new Error('Expected provider statuses for Meta, LinkedIn, YouTube, and TikTok.');
   }
 
+  const metaOAuthSource = await fs.readFile(
+    path.join(process.cwd(), 'src', 'services', 'metaOAuthService.js'),
+    'utf8',
+  );
+  if (!metaOAuthSource.includes("endpoint.searchParams.set('fields', 'id,name,category,tasks,access_token')")) {
+    throw new Error('Meta Page discovery fields must use id,name,category,tasks,access_token.');
+  }
+  if (metaOAuthSource.includes('perms')) {
+    throw new Error('Meta Page discovery must not request or map the obsolete perms field.');
+  }
+
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'metarix-backend-check-'));
   const tokenStore = createTokenStore(path.join(tempDir, 'token-store.json'));
   await tokenStore.saveConnection({
