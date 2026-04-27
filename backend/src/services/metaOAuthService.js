@@ -41,6 +41,17 @@ function createMetaOAuthService(tokenStorePath) {
     }
   }
 
+  function redactTokenishText(value) {
+    if (typeof value !== 'string') {
+      return null;
+    }
+    return value
+      .replace(/access_token=[^&\s]+/gi, 'access_token=[REDACTED]')
+      .replace(/app_secret=[^&\s]+/gi, 'app_secret=[REDACTED]')
+      .replace(/client_secret=[^&\s]+/gi, 'client_secret=[REDACTED]')
+      .replace(/\bEAA[A-Za-z0-9_-]+/g, '[REDACTED]');
+  }
+
   async function readMetaErrorPayload(response) {
     const raw = await response.text();
     if (!raw.trim()) {
@@ -53,7 +64,7 @@ function createMetaOAuthService(tokenStorePath) {
         return null;
       }
       return {
-        message: typeof error.message === 'string' ? error.message : null,
+        message: redactTokenishText(error.message),
         type: typeof error.type === 'string' ? error.type : null,
         code: typeof error.code === 'number' ? error.code : null,
         error_subcode:
@@ -166,6 +177,40 @@ function createMetaOAuthService(tokenStorePath) {
     return readJsonOrThrow(response, 'meta.pages_fetch_failed', 'Meta pages fetch failed.');
   }
 
+  async function publishTextToPage({ pageId, pageAccessToken, message }) {
+    const config = requireMetaConfig();
+    const endpoint = new URL(`https://graph.facebook.com/${config.graphVersion}/${pageId}/feed`);
+    const body = new URLSearchParams();
+    body.set('message', message);
+    body.set('access_token', pageAccessToken);
+    const response = await fetch(endpoint.toString(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString(),
+    });
+    if (!response.ok) {
+      const diagnostic = await readMetaErrorPayload(response);
+      const error = safeError('Meta page publish failed.', 'meta.publish_failed');
+      error.status = response.status;
+      if (diagnostic) {
+        error.diagnostic = diagnostic;
+        error.message = `${error.message}: ${[
+          diagnostic.message,
+          diagnostic.type,
+          diagnostic.code !== null ? `code=${diagnostic.code}` : null,
+          diagnostic.error_subcode !== null ? `subcode=${diagnostic.error_subcode}` : null,
+          diagnostic.fbtrace_id ? `fbtrace_id=${diagnostic.fbtrace_id}` : null,
+        ]
+          .filter(Boolean)
+          .join(' | ')}`;
+      }
+      throw error;
+    }
+    return readJsonOrThrow(response, 'meta.publish_failed', 'Meta page publish failed.');
+  }
+
   function buildSafeConnection({ workspaceId, me, pages, tokenRef, userAccessToken }) {
     return {
       provider: 'meta',
@@ -241,6 +286,7 @@ function createMetaOAuthService(tokenStorePath) {
     exchangeForLongLivedToken,
     fetchMe,
     fetchPages,
+    publishTextToPage,
     buildSafeConnection,
     saveConnectionRecord,
     getConnectionRecord,

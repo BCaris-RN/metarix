@@ -45,6 +45,22 @@ function createMetaRouter() {
       : [],
   });
 
+  const findConnectionPage = (connection, pageId) =>
+    Array.isArray(connection.pages)
+      ? connection.pages.find((page) => String(page.id || '') === pageId)
+      : null;
+
+  const maxTextPostMessageLength = 5000;
+
+  const looksLikeMetaPermissionFailure = (caughtError) => {
+    const diagnostic = caughtError?.diagnostic || {};
+    return (
+      caughtError?.status === 403 ||
+      diagnostic.code === 10 ||
+      diagnostic.code === 200
+    );
+  };
+
   const renderSuccessPage = (displayName, pages) => {
     const pageItems = pages
       .map((page) => `<li>${escapeHtml(page.name || 'Unnamed page')}</li>`)
@@ -321,6 +337,118 @@ function createMetaRouter() {
       });
     }
     return res.json(safePageList(workspaceId, connection));
+  });
+
+  router.post('/api/meta/pages/:pageId/post-text', async (req, res) => {
+    const workspaceId = String(req.body?.workspaceId || '').trim();
+    const pageId = String(req.params.pageId || '').trim();
+    const message = typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+    if (!workspaceId) {
+      return res.status(400).json({
+        ok: false,
+        errorCode: 'oauth.workspace_missing',
+        message: 'workspaceId is required.',
+      });
+    }
+    if (!pageId) {
+      return res.status(400).json({
+        ok: false,
+        errorCode: 'meta.page_missing',
+        message: 'pageId is required.',
+      });
+    }
+    if (!message) {
+      return res.status(400).json({
+        ok: false,
+        errorCode: 'meta.message_missing',
+        message: 'message is required.',
+      });
+    }
+    if (message.length > maxTextPostMessageLength) {
+      return res.status(400).json({
+        ok: false,
+        errorCode: 'meta.message_too_long',
+        message: `message must be ${maxTextPostMessageLength} characters or fewer.`,
+      });
+    }
+    const connection = await readConnection(workspaceId, 'meta');
+    if (!connection) {
+      return res.status(404).json({
+        ok: false,
+        errorCode: 'meta.not_connected',
+        message: 'Meta is not connected for this workspace.',
+      });
+    }
+    const page = findConnectionPage(connection, pageId);
+    if (!page) {
+      return res.status(404).json({
+        ok: false,
+        errorCode: 'meta.page_not_found',
+        message: 'The requested page is not connected for this workspace.',
+      });
+    }
+    if (!page.pageAccessToken) {
+      return res.status(409).json({
+        ok: false,
+        errorCode: 'meta.page_token_missing',
+        message: 'The requested page does not have a server-side page access token.',
+      });
+    }
+    const tasks = Array.isArray(page.tasks) ? page.tasks : [];
+    if (tasks.length > 0 && !tasks.includes('CREATE_CONTENT')) {
+      return res.status(403).json({
+        ok: false,
+        errorCode: 'meta.permission_missing',
+        message: 'The requested page is not authorized for content creation.',
+      });
+    }
+    try {
+      const postResult = await metaOAuthService.publishTextToPage({
+        pageId,
+        pageAccessToken: page.pageAccessToken,
+        message,
+      });
+      info('Meta page text post created', {
+        provider: 'facebook',
+        workspaceId,
+        pageId,
+        pageName: page.name || null,
+        externalPostId: postResult?.id || null,
+        messageLength: message.length,
+      });
+      return res.status(201).json({
+        ok: true,
+        provider: 'facebook',
+        pageId,
+        pageName: page.name || null,
+        externalPostId: postResult?.id || null,
+        message: 'Published',
+      });
+    } catch (caughtError) {
+      logError('Meta page text post failed', sanitize({
+        provider: 'facebook',
+        workspaceId,
+        pageId,
+        message: caughtError?.message,
+        code: caughtError?.code,
+        diagnostic: caughtError?.diagnostic || null,
+      }));
+      if (caughtError?.code === 'meta.publish_failed') {
+        const errorCode = looksLikeMetaPermissionFailure(caughtError)
+          ? 'meta.permission_missing'
+          : 'meta.publish_failed';
+        return res.status(errorCode === 'meta.permission_missing' ? 403 : 502).json({
+          ok: false,
+          errorCode,
+          diagnostic: caughtError.diagnostic || null,
+        });
+      }
+      return res.status(500).json({
+        ok: false,
+        errorCode: 'meta.publish_failed',
+        message: 'Meta post failed.',
+      });
+    }
   });
 
   router.get('/api/oauth/meta/pages', async (req, res) => {

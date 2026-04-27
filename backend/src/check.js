@@ -21,6 +21,22 @@ async function main() {
   if (metaOAuthSource.includes('perms')) {
     throw new Error('Meta Page discovery must not request or map the obsolete perms field.');
   }
+  if (!metaOAuthSource.includes('${config.graphVersion}/${pageId}/feed')) {
+    throw new Error('Meta Page text posting must target the Graph Page feed edge.');
+  }
+  if (metaOAuthSource.includes("endpoint.searchParams.set('access_token', pageAccessToken)")) {
+    throw new Error('Meta Page text posting must not put page access tokens in request URLs.');
+  }
+  if (!metaOAuthSource.includes("body.set('access_token', pageAccessToken)")) {
+    throw new Error('Meta Page text posting must send page access tokens in the POST body only.');
+  }
+  const metaRouteSource = await fs.readFile(
+    path.join(process.cwd(), 'src', 'routes', 'meta.js'),
+    'utf8',
+  );
+  if (!metaRouteSource.includes("router.post('/api/meta/pages/:pageId/post-text'")) {
+    throw new Error('Expected Meta Page text post route to be registered.');
+  }
 
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'metarix-backend-check-'));
   const tokenStore = createTokenStore(path.join(tempDir, 'token-store.json'));
